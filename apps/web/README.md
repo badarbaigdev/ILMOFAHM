@@ -62,6 +62,23 @@ Typed accessors live in `src/lib/env.ts`. Supabase helpers:
 
 Tests live next to source as `*.test.ts`. The `test` script compiles them with the workspace TypeScript package and runs them through Node's built-in test runner so quality gates work offline. Prefer migrating to Vitest when the npm registry is available and dependency versions can be pinned cleanly.
 
+## Continuous integration
+
+GitHub Actions workflow: [`../../.github/workflows/ci.yml`](../../.github/workflows/ci.yml).
+
+On every pull request and push to `main`, CI runs from `apps/web/`:
+
+```bash
+npm ci
+npm run lint
+npm run format:check
+npm run typecheck
+npm run test -- --run
+npm run build
+```
+
+Build uses public placeholder env vars only. CI does **not** apply Supabase migrations or use production secrets. Mirror CI locally with `npm run check` (format write vs check aside).
+
 ## App shell and health
 
 - Public shell: `src/components/shell/AppShell.tsx` (skip link, brand header, placeholder module nav, footer).

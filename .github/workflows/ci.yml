@@ -1,9 +1,16 @@
+# ILM-SETUP-006 — Web quality CI
+# Runs on pull requests and pushes to main.
+# Does NOT apply database migrations, use production secrets, or call live DBs.
 name: CI
 
 on:
   pull_request:
   push:
     branches: [main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -20,40 +27,44 @@ jobs:
         uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - name: Detect whether the M0 web app has been scaffolded
+
+      - name: Require scaffolded web app
         id: app
         shell: bash
         run: |
-          if [[ -f package.json && -f package-lock.json ]]; then
-            echo "ready=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "Next.js app not scaffolded yet. Full web CI activates after M0 adds package.json and package-lock.json."
+          if [[ ! -f package.json || ! -f package-lock.json ]]; then
+            echo "::error::apps/web must contain package.json and package-lock.json"
+            exit 1
           fi
+          echo "Web app lockfile present; continuing quality checks."
+
       - name: Setup Node.js 24 LTS
-        if: steps.app.outputs.ready == 'true'
         uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
           cache-dependency-path: apps/web/package-lock.json
+
       - name: Install dependencies
-        if: steps.app.outputs.ready == 'true'
         run: npm ci
+
       - name: Lint
-        if: steps.app.outputs.ready == 'true'
         run: npm run lint
+
+      - name: Format check
+        run: npm run format:check
+
       - name: Typecheck
-        if: steps.app.outputs.ready == 'true'
         run: npm run typecheck
+
       - name: Unit tests
-        if: steps.app.outputs.ready == 'true'
         run: npm run test -- --run
-      - name: Build
-        if: steps.app.outputs.ready == 'true'
+
+      - name: Production build
         run: npm run build
         env:
-          # Placeholder values are only for builds; never use production secrets in CI.
+          # Public placeholders for Next.js build only — never production values.
+          # Do not set SUPABASE_SECRET_KEY in CI; privileged paths are not exercised here.
           NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_placeholder_for_build_only
           NEXT_PUBLIC_APP_URL: http://localhost:3000
