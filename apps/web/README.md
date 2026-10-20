@@ -119,9 +119,16 @@ Apply locally:
 
 ```bash
 # repo root
-sg docker -c 'supabase db reset'   # or: ./scripts/supabase-local.sh reset
+./scripts/supabase-local.sh reset
 cd apps/web && npm run dev
 ```
+
+## Memberships and invitations (ILM-PLAT-006)
+
+- Managers (owner/admin): `/app/members` — invite by email/role, revoke pending invites, suspend/reactivate/revoke members.
+- Invite link: `/auth/accept-invite?token=…` (token shown once in the UI; SHA-256 stored in DB). Email delivery is not wired yet — copy the link locally.
+- Accept attaches the signed-in user only when their Auth email matches the invite, and only to that invitation’s organization.
+- Status changes are audited in `audit_events` (`membership.*` actions). Broader audit platform work is ILM-PLAT-008.
 
 ## Brand
 

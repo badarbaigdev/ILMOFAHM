@@ -111,8 +111,13 @@ export default async function AppHomePage({ searchParams }: AppHomePageProps) {
         </ul>
       </section>
 
-      <p className="mt-8 text-sm text-muted">
-        Need another institution?{" "}
+      <p className="mt-8 flex flex-wrap gap-x-4 gap-y-2 text-sm text-muted">
+        <Link
+          href={`/app/members?organization=${selected.organizationId}`}
+          className="text-ink-soft underline"
+        >
+          Manage members
+        </Link>
         <Link href="/app/onboarding" className="text-ink-soft underline">
           Create organization
         </Link>

@@ -325,16 +325,24 @@ select results_eq(
 
 select set_config('request.jwt.claim.sub', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', true);
 
+-- Active org colleagues are visible for member directories (ILM-PLAT-006).
+-- Cross-tenant profiles remain hidden.
 select results_eq(
-  $$ select full_name from public.profiles order by full_name $$,
-  $$ values ('Owner A') $$,
-  'user sees only own profile'
+  $$ select full_name from public.profiles
+     where id in (
+       'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+       'cccccccc-cccc-cccc-cccc-cccccccccccc',
+       'dddddddd-dddd-dddd-dddd-dddddddddddd'
+     )
+     order by full_name $$,
+  $$ values ('Owner A'), ('Suspended A'), ('Teacher A') $$,
+  'active member sees colleague profiles in the same organization'
 );
 
 select is_empty(
   $$ select id from public.profiles
      where id = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb' $$,
-  'user cannot select another profile'
+  'user cannot select a profile from another organization'
 );
 
 select * from finish();
