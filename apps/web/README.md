@@ -102,7 +102,26 @@ Local redirects are already allow-listed in `supabase/config.toml` (`site_url` +
 
 Fill `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` in `.env.local` from `supabase status` before exercising Auth locally. Empty placeholders will break runtime Auth calls.
 
-Profile rows are inserted with the user session client under RLS (`src/features/auth/ensure-profile.ts`). Membership/authorization is **not** on `profiles` — organization onboarding is ILM-PLAT-005.
+Profile rows are inserted with the user session client under RLS (`src/features/auth/ensure-profile.ts`). Membership/authorization is **not** on `profiles`.
+
+## Organization onboarding (ILM-PLAT-005)
+
+Signed-in users without an active membership are sent to `/app/onboarding`. Submission calls the Postgres RPC `create_organization_with_owner`, which atomically creates:
+
+1. `organizations` (status `trial`)
+2. default `campuses` row
+3. `organization_memberships` with `role=owner`, `status=active`
+4. an idempotency ledger row so safe retries do not duplicate tenants
+
+Direct `INSERT` into `organizations` remains denied by RLS. The RPC never accepts a client-supplied `organization_id`. After `supabase db reset` (or applying the new migration), exercise the flow with a signed-in user.
+
+Apply locally:
+
+```bash
+# repo root
+sg docker -c 'supabase db reset'   # or: ./scripts/supabase-local.sh reset
+cd apps/web && npm run dev
+```
 
 ## Brand
 
