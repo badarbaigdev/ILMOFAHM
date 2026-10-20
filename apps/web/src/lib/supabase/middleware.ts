@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-import { getPublicEnv } from "@/lib/env";
+import { EnvValidationError, getPublicEnv } from "@/lib/env";
 
 /**
  * Refreshes the Auth session cookies and guards `/app` routes.
@@ -12,7 +12,27 @@ export async function updateSession(request: NextRequest) {
     request,
   });
 
-  const { supabaseUrl, supabasePublishableKey } = getPublicEnv();
+  const pathname = request.nextUrl.pathname;
+  const isAppRoute = pathname === "/app" || pathname.startsWith("/app/");
+
+  let supabaseUrl: string;
+  let supabasePublishableKey: string;
+  try {
+    ({ supabaseUrl, supabasePublishableKey } = getPublicEnv());
+  } catch (error) {
+    if (error instanceof EnvValidationError) {
+      // Misconfigured env: do not crash every page. Fail closed on /app.
+      if (isAppRoute) {
+        const redirectUrl = request.nextUrl.clone();
+        redirectUrl.pathname = "/auth/sign-in";
+        redirectUrl.searchParams.set("next", pathname);
+        redirectUrl.searchParams.set("error", "missing_env");
+        return NextResponse.redirect(redirectUrl);
+      }
+      return supabaseResponse;
+    }
+    throw error;
+  }
 
   const supabase = createServerClient(supabaseUrl, supabasePublishableKey, {
     cookies: {
@@ -36,9 +56,6 @@ export async function updateSession(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
-  const pathname = request.nextUrl.pathname;
-  const isAppRoute = pathname === "/app" || pathname.startsWith("/app/");
 
   if (isAppRoute && !user) {
     const redirectUrl = request.nextUrl.clone();
