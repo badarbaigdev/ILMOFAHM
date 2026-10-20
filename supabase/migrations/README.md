@@ -40,7 +40,7 @@ That command drops local data, applies every migration in order, then runs `supa
 | M0 | CLI config + placeholder migrate path |
 | M1 / ILM-PLAT-001 | Tenant tables, FKs, checks, indexes; RLS enabled deny-by-default |
 | M1 / ILM-PLAT-002 | Least-privilege grants + RLS policies (this file) |
-| M1 / ILM-PLAT-003 | Automated SQL allow/deny tests |
+| M1 / ILM-PLAT-003 | Automated SQL allow/deny tests (`supabase/tests/database/`) |
 | M1 / ILM-PLAT-005 | Atomic first-owner org provisioning (authenticated insert path) |
 
 Never rewrite a migration that has already been applied on a shared environment; add a new forward migration instead.

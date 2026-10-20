@@ -46,6 +46,11 @@ case "$cmd" in
     [[ -n "$name" ]] || die "usage: $0 migration-new <short_snake_description>"
     supabase migration new "$name"
     ;;
+  test)
+    need_cmd docker
+    need_cmd supabase
+    supabase test db
+    ;;
   *)
     cat <<'EOF'
 Usage: ./scripts/supabase-local.sh <command>
@@ -54,6 +59,7 @@ Commands:
   start            Start local Supabase (Docker) and print status
   status           Show local API/DB/Studio URLs and demo keys
   reset            Drop local DB, re-apply all migrations, run seed.sql
+  test             Run pgTAP SQL tests (supabase/tests/database)
   stop             Stop local Supabase containers
   migration-new X  Create supabase/migrations/<timestamp>_X.sql
 

@@ -114,12 +114,12 @@ Prefer `supabase db reset` for review evidence that the full history applies cle
 
 ## SQL / RLS tests
 
-Place policy tests under `supabase/tests/` as tenant tables are introduced (M1+). Until then the folder holds conventions only. See `tests/README.md`.
-
-Example future command (once tests exist):
+pgTAP tests live in `supabase/tests/database/`. See `tests/README.md`.
 
 ```bash
-supabase test db
+./scripts/supabase-local.sh reset
+./scripts/supabase-local.sh test
+# equivalent: supabase test db
 ```
 
 ## What this issue does **not** include
