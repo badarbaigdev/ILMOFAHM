@@ -42,8 +42,9 @@ export default function HomePage() {
           Foundation status
         </h2>
         <p className="mt-2 text-sm leading-relaxed text-muted">
-          Public landing shell and health check are available. Authentication,
-          tenancy, and school workflows are not implemented on this page.
+          Public landing shell, health check, and Auth SSR sign-in are
+          available. Organization onboarding and school workflows are not
+          implemented on this page.
         </p>
         <p className="mt-3 text-sm text-ink-soft">
           <span className="font-medium">Web service:</span> {health.status}

@@ -81,9 +81,28 @@ Build uses public placeholder env vars only. CI does **not** apply Supabase migr
 
 ## App shell and health
 
-- Public shell: `src/components/shell/AppShell.tsx` (skip link, brand header, placeholder module nav, footer).
+- Public shell: `src/components/shell/AppShell.tsx` (skip link, brand header, account links, placeholder module nav, footer).
 - Landing: `/` — brand page plus foundation status (no fake school data).
 - Health: `GET /api/health` → `{ status, service, timestamp }` only (no secrets, no DB probe).
+
+## Auth SSR (ILM-PLAT-004)
+
+Cookie session via `@supabase/ssr`. Middleware refreshes the session and guards `/app/*`. Protected pages also call `getUser()` (never trust client-only session state).
+
+| Route                   | Purpose                                                  |
+| ----------------------- | -------------------------------------------------------- |
+| `/auth/sign-in`         | Email/password sign-in                                   |
+| `/auth/sign-up`         | Account + `profiles` bootstrap (no org yet)              |
+| `/auth/forgot-password` | Password reset email (Mailpit locally)                   |
+| `/auth/update-password` | Set new password after recovery callback                 |
+| `/auth/callback`        | PKCE code exchange; then redirects to a safe `next` path |
+| `/app`                  | Signed-in workspace placeholder                          |
+
+Local redirects are already allow-listed in `supabase/config.toml` (`site_url` + `additional_redirect_urls`). Hosted Auth URL config: [`../../docs/09-vercel-preview-runbook.md`](../../docs/09-vercel-preview-runbook.md).
+
+Fill `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` in `.env.local` from `supabase status` before exercising Auth locally. Empty placeholders will break runtime Auth calls.
+
+Profile rows are inserted with the user session client under RLS (`src/features/auth/ensure-profile.ts`). Membership/authorization is **not** on `profiles` — organization onboarding is ILM-PLAT-005.
 
 ## Brand
 

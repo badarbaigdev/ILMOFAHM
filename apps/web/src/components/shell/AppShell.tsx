@@ -1,6 +1,8 @@
 import Link from "next/link";
 
+import { signOutAction } from "@/features/auth/actions";
 import { brand } from "@/lib/brand";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 const plannedAreas = [
   { id: "organization", label: "Organization" },
@@ -16,9 +18,21 @@ type AppShellProps = {
 
 /**
  * Public shell foundation for landing/status pages.
- * Later authenticated workspaces can reuse this structure with real nav.
+ * Auth header links reflect the current cookie session (getUser).
  */
-export function AppShell({ children }: AppShellProps) {
+export async function AppShell({ children }: AppShellProps) {
+  let user: { id: string } | null = null;
+  try {
+    const supabase = await createServerSupabaseClient();
+    const {
+      data: { user: sessionUser },
+    } = await supabase.auth.getUser();
+    user = sessionUser;
+  } catch {
+    // Missing env or Auth unreachable (e.g. CI placeholder URL) → treat as signed out.
+    user = null;
+  }
+
   return (
     <div className="flex min-h-screen flex-col">
       <a href="#main-content" className="skip-link">
@@ -39,26 +53,56 @@ export function AppShell({ children }: AppShellProps) {
             </Link>
           </div>
 
-          <nav aria-label="Planned modules" className="min-w-0">
-            <ul className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-muted">
-              {plannedAreas.map((area) => (
-                <li key={area.id}>
-                  <span
-                    className="inline-flex items-center gap-2 rounded-sm px-1 py-0.5"
-                    title="Not implemented yet"
-                  >
-                    <span>{area.label}</span>
-                    <span className="text-xs tracking-wide text-muted/80 uppercase">
-                      Soon
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+            <nav aria-label="Planned modules" className="min-w-0">
+              <ul className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-muted">
+                {plannedAreas.map((area) => (
+                  <li key={area.id}>
+                    <span
+                      className="inline-flex items-center gap-2 rounded-sm px-1 py-0.5"
+                      title="Not implemented yet"
+                    >
+                      <span>{area.label}</span>
+                      <span className="text-xs tracking-wide text-muted/80 uppercase">
+                        Soon
+                      </span>
                     </span>
-                  </span>
-                </li>
-              ))}
-            </ul>
-            <p className="sr-only">
-              Module areas are placeholders and are not available yet.
-            </p>
-          </nav>
+                  </li>
+                ))}
+              </ul>
+              <p className="sr-only">
+                Module areas are placeholders and are not available yet.
+              </p>
+            </nav>
+
+            <nav aria-label="Account" className="text-sm">
+              {user ? (
+                <div className="flex items-center gap-3">
+                  <Link
+                    href="/app"
+                    className="text-ink-soft underline-offset-2 hover:underline"
+                  >
+                    Workspace
+                  </Link>
+                  <form action={signOutAction}>
+                    <button
+                      type="submit"
+                      className="text-ink underline-offset-2 hover:underline"
+                    >
+                      Sign out
+                    </button>
+                  </form>
+                </div>
+              ) : (
+                <Link
+                  href="/auth/sign-in"
+                  className="font-medium text-ink underline-offset-2 hover:underline"
+                >
+                  Sign in
+                </Link>
+              )}
+            </nav>
+          </div>
         </div>
       </header>
 

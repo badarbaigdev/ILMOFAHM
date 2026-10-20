@@ -60,11 +60,11 @@ Before merging a change that touches env or Auth:
 
 Configure these in each **Supabase project** (local `config.toml` already covers local defaults; hosted projects use the Supabase Dashboard → Authentication → URL configuration).
 
-Exact callback paths will be finalized with **ILM-PLAT-004** (Auth SSR lifecycle). Until then, reserve the following patterns so previews do not need emergency Auth edits later.
+**ILM-PLAT-004** Auth callback path is `/auth/callback` (optional `?next=` for a safe internal destination). Password reset lands on `/auth/update-password` after the callback. Allow these redirect patterns per environment:
 
 | Environment | Site URL (primary) | Redirect URLs to allow (examples) |
 |---|---|---|
-| Local | `http://127.0.0.1:3000` or `http://localhost:3000` | `http://127.0.0.1:3000/**`, `http://localhost:3000/**`, and future `.../auth/callback` |
+| Local | `http://127.0.0.1:3000` or `http://localhost:3000` | `http://127.0.0.1:3000/**`, `http://localhost:3000/**`, `http://127.0.0.1:3000/auth/callback`, `http://localhost:3000/auth/callback` |
 | Vercel Preview | Prefer a **stable staging hostname** if you have one; otherwise the current preview deployment origin | Staging: `https://<your-staging-host>/**`. Per-PR: add `https://<preview-host>/**` or a documented wildcard pattern supported by your Supabase plan/docs |
 | Staging (hosted app) | `https://<staging-host>` | `https://<staging-host>/**`, `https://<staging-host>/auth/callback` |
 | Production | `https://<production-host>` | Only production hosts: `https://<production-host>/**`, `https://<production-host>/auth/callback` |
@@ -83,7 +83,7 @@ After a Preview deployment finishes, an engineer verifies:
 2. **Public page** — `/` loads the ILMOFAHM brand landing (no fake student/institution records).
 3. **Health** — `GET /api/health` returns JSON shaped like `{ "status": "ok", "service": "ilmofahm-web", "timestamp": "..." }` with **no** keys, DB URLs, or stack traces.
 4. **Env isolation** — In browser network/app config, the Supabase URL host matches the **non-production** project (compare project ref/host to the staging/dev dashboard—not production).
-5. **Auth callbacks** — When M1 Auth exists: sign-in, sign-out, email confirm/callback, and password-reset against the Preview/staging project only.
+5. **Auth callbacks** — Sign-in, sign-out, `/auth/callback`, and password-reset (`/auth/forgot-password` → email → `/auth/update-password`) against the Preview/staging project only.
 6. **Data** — Only synthetic/staging data; no production exports.
 
 If any check fails, fix before merge. Do not “hot-fix” by pointing Preview at production.

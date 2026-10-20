@@ -29,4 +29,3 @@ describe("supabase client boundaries", () => {
     assert.doesNotMatch(read("server.ts"), /requireSupabaseSecretKey/);
   });
 });
-

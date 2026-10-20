@@ -5,6 +5,9 @@ import { brand } from "@/lib/brand";
 
 import "./globals.css";
 
+/** Cookie session + Auth guards require a request; do not statically prerender. */
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: brand.productName,
   description: brand.descriptor,
