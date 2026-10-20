@@ -62,6 +62,12 @@ Typed accessors live in `src/lib/env.ts`. Supabase helpers:
 
 Tests live next to source as `*.test.ts`. The `test` script compiles them with the workspace TypeScript package and runs them through Node's built-in test runner so quality gates work offline. Prefer migrating to Vitest when the npm registry is available and dependency versions can be pinned cleanly.
 
+## App shell and health
+
+- Public shell: `src/components/shell/AppShell.tsx` (skip link, brand header, placeholder module nav, footer).
+- Landing: `/` — brand page plus foundation status (no fake school data).
+- Health: `GET /api/health` → `{ status, service, timestamp }` only (no secrets, no DB probe).
+
 ## Brand
 
 See [`../../docs/00-brand-and-product.md`](../../docs/00-brand-and-product.md) for canonical product copy. Runtime brand strings live in `src/lib/brand.ts`.
