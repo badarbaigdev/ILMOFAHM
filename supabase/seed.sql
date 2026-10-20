@@ -1,0 +1,2 @@
+-- Local development seed data only. Use synthetic records; never production student or guardian data.
+-- Add deterministic seed rows as the relevant schema is introduced.

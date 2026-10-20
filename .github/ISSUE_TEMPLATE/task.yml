@@ -1,0 +1,46 @@
+name: Engineering task
+description: A scoped implementation task with testable acceptance criteria
+title: "[ILM-XXX-000] "
+labels: ["type:task"]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal and user value
+      description: What problem does this task solve?
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope and non-goals
+      description: Explicitly state what is and is not included.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Use observable, testable checkboxes.
+      placeholder: "- [ ] ..."
+    validations:
+      required: true
+  - type: textarea
+    id: security
+    attributes:
+      label: Authorization / data / migration impact
+      description: State permissions, tenant scope, database migrations and risks. Use N/A with a reason if none.
+    validations:
+      required: true
+  - type: textarea
+    id: tests
+    attributes:
+      label: Test plan
+      description: Unit, integration, RLS/security, accessibility, or UAT tests required.
+    validations:
+      required: true
+  - type: input
+    id: depends
+    attributes:
+      label: Dependencies
+      placeholder: "ILM-SETUP-001"

@@ -1,0 +1,28 @@
+name: Product feature proposal
+description: Propose a feature requiring product scope review
+labels: ["type:epic"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: User problem and affected role
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome and measurable success
+    validations:
+      required: true
+  - type: textarea
+    id: workflow
+    attributes:
+      label: Proposed workflow and edge cases
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies, data and security implications
+    validations:
+      required: true

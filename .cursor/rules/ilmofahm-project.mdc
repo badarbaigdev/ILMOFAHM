@@ -1,0 +1,21 @@
+---
+description: Persistent architecture, security, and workflow rules for ILMOFAHM
+alwaysApply: true
+---
+
+# ILMOFAHM engineering rules
+
+- Read the relevant product/architecture docs before implementing a module. Work only on the active issue/milestone; do not generate the entire ERP in one pass.
+- ILMOFAHM is multi-tenant. Treat organization isolation as a hard security boundary. Resolve membership/scope from trusted server/database records; never trust a client-provided tenant ID by itself.
+- Every tenant-owned database table must have explicit SQL migrations, constraints, least-privilege grants, RLS policies and allow/deny tests before exposure.
+- A frontend role guard is UX only. Authorization must be enforced server-side and, where appropriate, by RLS on every protected query/mutation/export/storage operation.
+- Never expose Supabase secret/service-role keys in browser code, `NEXT_PUBLIC_*` variables, source control, logs or prompts. Do not use privileged keys for normal user requests.
+- SQL migrations are the schema source of truth. Do not make undocumented dashboard-only schema changes. Avoid Prisma as a second migration authority in this project unless an ADR explicitly changes the decision.
+- Organize business logic by domain/feature. Do not put business rules or DB access in presentational React components. Keep server-only modules separated from client modules.
+- Validate all untrusted input server-side. Use decimal-safe types for money, database constraints for invariants, idempotency for retryable operations, and audit/reversal semantics for consequential financial/results changes.
+- Do not silently fabricate live data or claim tools, external accounts, CI, or deployment worked unless their result was observed.
+- Use synthetic fixtures only. Never commit student/guardian real data, personal records, credentials, or production exports.
+- Add or update tests for every behavior change, including denied permissions and cross-tenant access. Preserve strict TypeScript; do not bypass errors with broad `any`, lint-disable-all, or empty tests.
+- Include loading, empty, error, success and unauthorized states where relevant. Keep accessibility and mobile behavior in scope.
+- Keep the architecture a modular monolith until a measured product need justifies a separate service. Document material stack/architecture changes as ADRs.
+- Finish each task with changed files, checks actually run/results, unresolved limitations, and setup steps. Never begin later modules before the current issue's acceptance criteria are met.
