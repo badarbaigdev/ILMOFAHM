@@ -53,7 +53,7 @@ P0 means blocks safe pilot/foundation; P1 means required for the first useful pi
 - PR checks run before merge via `.github/workflows/ci.yml` (ILM-SETUP-006).
 - CI installs from `apps/web/package-lock.json` with Node 24 LTS, then runs lint, format check, typecheck, unit tests, and production build.
 - CI uses placeholder `NEXT_PUBLIC_*` Supabase values only. It never sets `SUPABASE_SECRET_KEY`, never calls a live database, and never applies migrations.
-- Vercel previews must use development/staging Supabase credentials, never production secrets.
+- Vercel previews must use development/staging Supabase credentials, never production secrets. Operator steps: [`09-vercel-preview-runbook.md`](09-vercel-preview-runbook.md).
 - Production deploy is tied to `main` after review and CI pass.
 - Database migration deployment is a separate, controlled step; do not automatically run destructive database changes just because a frontend preview deploys.
 - Restrict production environment secrets to the production deployment context.

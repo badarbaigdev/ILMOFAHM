@@ -43,13 +43,19 @@ A publishable key is expected to be visible to the browser; data security must c
 
 ## Vercel setup
 
+Full operator runbook (ILM-SETUP-007): [`09-vercel-preview-runbook.md`](09-vercel-preview-runbook.md).
+
+Summary:
+
 1. Import the GitHub repository into Vercel.
 2. Set **Root Directory** to `apps/web`.
 3. Use preview deployments for pull requests and production deployment from protected `main`.
-4. Add development/staging credentials to Preview/Development contexts and production credentials only to Production context.
-5. Configure Supabase Auth Site URL and allowed redirect URLs for local, staging/preview as appropriate, and production domains.
-6. After deploy, test sign-in, sign-out, protected routes, password reset, and RLS-restricted reads against the environment's own test data.
+4. Add development/staging credentials to Preview/Development contexts and production credentials only to Production context — Preview must never use production Supabase.
+5. Configure Supabase Auth Site URL and allowed redirect URLs for local, preview/staging, and production (details in the runbook).
+6. After deploy, run the preview smoke checks in the runbook (public page, `/api/health`, env isolation; Auth flows once M1 lands).
 7. Add the live domain only after security, privacy, backup, and school UAT release gates have passed.
+
+Cursor cannot create Vercel/Supabase/GitHub resources without authorized human access; do not invent project IDs or domains in the repository.
 
 ## Database migration release
 

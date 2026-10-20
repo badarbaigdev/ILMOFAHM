@@ -33,7 +33,7 @@ npm run check
 | `npm run build`        | Production build                                                        |
 | `npm run check`        | lint + format:check + typecheck + test + build                          |
 
-Vercel **Root Directory** for this app: `apps/web`.
+Vercel **Root Directory** for this app: `apps/web`. Preview/production env scopes, Auth redirect URL patterns, and smoke checks: [`../../docs/09-vercel-preview-runbook.md`](../../docs/09-vercel-preview-runbook.md).
 
 ## Environment variables
 

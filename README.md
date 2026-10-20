@@ -52,7 +52,7 @@ Read `docs/00-brand-and-product.md` first and preserve the exact product name, t
 4. Read `docs/08-comprehensive-srs.md`, `docs/01-architecture-and-stack.md`, `docs/02-module-roadmap.md`, and `docs/03-github-workflow.md`.
 5. Start with `ILM-SETUP-001` using `docs/cursor-prompts/01-project-bootstrap.md`. Then handle each remaining M0 issue with its matching prompt in `docs/cursor-prompts/`; keep one issue per branch/PR.
 6. Review the diff. Run the documented checks locally. Merge only when CI passes.
-7. Connect the repository to Vercel and configure preview deployment variables for a non-production Supabase project.
+7. Connect the repository to Vercel and configure preview deployment variables for a non-production Supabase project. Follow [`docs/09-vercel-preview-runbook.md`](docs/09-vercel-preview-runbook.md) (Root Directory `apps/web`; Preview ≠ production secrets).
 8. Create the GitHub backlog using `node scripts/create-github-backlog.mjs --dry-run`, then run `--create` only after reviewing the preview.
 
 ## Non-negotiable safety rules
