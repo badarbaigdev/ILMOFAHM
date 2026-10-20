@@ -1,14 +1,28 @@
-# Web application
+# ILMOFAHM web application
 
-M0 will scaffold the Next.js application here. This README is preserved by the Cursor bootstrap task. Create the app using an empty temporary directory, then copy generated app files into this directory without replacing repository-level docs/configuration. Use npm and commit only `package-lock.json` for this app.
+Next.js App Router application for ILMOFAHM.
 
+## Requirements
 
-## Brand identity
+- Node.js 24 LTS (Node 20+ works for local bootstrap; CI targets Node 24)
+- npm
 
-**INSTITUTIONAL TECHNOLOGY**  
-# ILMOFAHM  
-*One system. Every institution.*
+## Commands
 
-Centralized school and academy management, designed for complete institutional visibility.
+```bash
+npm install
+npm run dev
+npm run lint
+npm run build
+npm start
+```
 
-See [`../../docs/00-brand-and-product.md`](../../docs/00-brand-and-product.md) for the canonical brand rules.
+- `npm run dev` — local development server (http://localhost:3000)
+- `npm run build` — production build
+- `npm run lint` — ESLint
+
+Vercel **Root Directory** for this app: `apps/web`.
+
+## Brand
+
+See [`../../docs/00-brand-and-product.md`](../../docs/00-brand-and-product.md) for canonical product copy.
