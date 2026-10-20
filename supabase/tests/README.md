@@ -23,4 +23,11 @@ supabase test db
 - Suspended/revoked membership denied on the next request
 - Insert/update cannot reassign `organization_id` / `campus_id` to another tenant
 
-M0 does not add policy tests yet because no tenant tables exist.
+## Status
+
+| Issue | Coverage |
+|---|---|
+| ILM-PLAT-002 | Policies and grants shipped in migrations |
+| ILM-PLAT-003 | Automated allow/deny tests (next) |
+
+Until ILM-PLAT-003 lands, treat isolation as **implemented in SQL but not yet proven by automated tests**.

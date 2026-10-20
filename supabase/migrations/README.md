@@ -31,6 +31,7 @@ That command drops local data, applies every migration in order, then runs `supa
 |---|---|---|
 | `20261020180000_foundation_placeholder.sql` | ILM-SETUP-003 | Migrate-from-zero proof |
 | `20261020210000_tenant_foundation_schema.sql` | ILM-PLAT-001 | `organizations`, `campuses`, `profiles`, `organization_memberships` |
+| `20261020213000_tenant_foundation_rls.sql` | ILM-PLAT-002 | Helpers, grants, RLS policies, block `organization_id` reassignment |
 
 ## Scope by milestone
 
@@ -38,6 +39,8 @@ That command drops local data, applies every migration in order, then runs `supa
 |---|---|
 | M0 | CLI config + placeholder migrate path |
 | M1 / ILM-PLAT-001 | Tenant tables, FKs, checks, indexes; RLS enabled deny-by-default |
-| M1 / ILM-PLAT-002+ | Least-privilege grants, RLS policies, SQL allow/deny tests |
+| M1 / ILM-PLAT-002 | Least-privilege grants + RLS policies (this file) |
+| M1 / ILM-PLAT-003 | Automated SQL allow/deny tests |
+| M1 / ILM-PLAT-005 | Atomic first-owner org provisioning (authenticated insert path) |
 
 Never rewrite a migration that has already been applied on a shared environment; add a new forward migration instead.
