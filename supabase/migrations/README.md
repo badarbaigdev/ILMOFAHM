@@ -8,11 +8,6 @@ All database schema, grant, RLS, index, function and policy changes must be comm
 YYYYMMDDHHMMSS_short_snake_description.sql
 ```
 
-Examples:
-
-- `20261020180000_foundation_placeholder.sql` (M0 tooling proof only)
-- `20261101120000_create_organizations.sql` (M1 — not yet)
-
 Create files with:
 
 ```bash
@@ -24,15 +19,25 @@ supabase migration new short_snake_description
 ```bash
 # repository root, Docker + Supabase CLI required
 supabase db reset
+# or
+./scripts/supabase-local.sh reset
 ```
 
 That command drops local data, applies every migration in order, then runs `supabase/seed.sql`.
+
+## Applied foundation migrations
+
+| File | Issue | Contents |
+|---|---|---|
+| `20261020180000_foundation_placeholder.sql` | ILM-SETUP-003 | Migrate-from-zero proof |
+| `20261020210000_tenant_foundation_schema.sql` | ILM-PLAT-001 | `organizations`, `campuses`, `profiles`, `organization_memberships` |
 
 ## Scope by milestone
 
 | Milestone | Expected migration content |
 |---|---|
-| M0 (`ILM-SETUP-003`) | CLI config + empty/placeholder migrate path only |
-| M1+ | Tenant tables, grants, RLS, and matching `supabase/tests/` |
+| M0 | CLI config + placeholder migrate path |
+| M1 / ILM-PLAT-001 | Tenant tables, FKs, checks, indexes; RLS enabled deny-by-default |
+| M1 / ILM-PLAT-002+ | Least-privilege grants, RLS policies, SQL allow/deny tests |
 
-Do not invent tenant business tables in M0. When a table is introduced, ship constraints, least-privilege grants, RLS, and allow/deny tests in the same vertical slice.
+Never rewrite a migration that has already been applied on a shared environment; add a new forward migration instead.
