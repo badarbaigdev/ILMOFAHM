@@ -35,6 +35,29 @@ npm run check
 
 Vercel **Root Directory** for this app: `apps/web`.
 
+## Environment variables
+
+1. Copy `.env.example` to `.env.local` (never commit `.env.local`).
+2. With local Supabase running, fill values from `supabase status` at the repo root:
+
+```bash
+cp .env.example .env.local
+# NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+# NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<Publishable key from supabase status>
+# NEXT_PUBLIC_APP_URL=http://localhost:3000
+# SUPABASE_SECRET_KEY=<Secret key from supabase status>   # server-only; optional until admin paths need it
+```
+
+Typed accessors live in `src/lib/env.ts`. Supabase helpers:
+
+| Helper                        | Module                        | Key used              |
+| ----------------------------- | ----------------------------- | --------------------- |
+| `createBrowserSupabaseClient` | `src/lib/supabase/browser.ts` | publishable           |
+| `createServerSupabaseClient`  | `src/lib/supabase/server.ts`  | publishable + cookies |
+| `createServiceSupabaseClient` | `src/lib/supabase/admin.ts`   | secret (server-only)  |
+
+`@supabase/ssr@0.12.7` is pinned with `@supabase/supabase-js@2.118.0` (peer requires `^2.114.0`). Upgrade both together.
+
 ## Unit tests
 
 Tests live next to source as `*.test.ts`. The `test` script compiles them with the workspace TypeScript package and runs them through Node's built-in test runner so quality gates work offline. Prefer migrating to Vitest when the npm registry is available and dependency versions can be pinned cleanly.

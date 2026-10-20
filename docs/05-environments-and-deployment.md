@@ -25,9 +25,9 @@
 
 ## Environment variables
 
-Keep real values in local ignored `.env.local` files and the appropriate Vercel environment. `.env.example` documents names only.
+Keep real values in local ignored `.env.local` files and the appropriate Vercel environment. `apps/web/.env.example` documents names only (no real values).
 
-Expected names to be introduced by M0 as needed:
+Expected names (ILM-SETUP-004):
 
 ```dotenv
 NEXT_PUBLIC_SUPABASE_URL=
@@ -36,6 +36,8 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 SUPABASE_SECRET_KEY=
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
+
+Local setup: copy `apps/web/.env.example` → `apps/web/.env.local`, then fill from `supabase status`. Typed validation lives in `apps/web/src/lib/env.ts`; browser/SSR/admin clients live under `apps/web/src/lib/supabase/`.
 
 A publishable key is expected to be visible to the browser; data security must come from RLS/grants and server authorization, not key secrecy. `SUPABASE_SECRET_KEY` is privileged and server-only; most user-facing operations should use a session-bound client that preserves the user's identity. Add provider keys only with a concrete integration and document their allowed environments.
 
