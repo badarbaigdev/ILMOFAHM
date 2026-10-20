@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
+
+import { brand } from "@/lib/brand";
+
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "ILMOFAHM",
-  description:
-    "Centralized school and academy management, designed for complete institutional visibility.",
+  title: brand.productName,
+  description: brand.descriptor,
 };
 
 export default function RootLayout({

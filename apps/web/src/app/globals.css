@@ -9,8 +9,9 @@
   --paper-elevated: #ffffff;
   --muted: #5b6b7c;
   --line: #d7e0ea;
-  --font-display: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua",
-    Georgia, serif;
+  --font-display:
+    "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia,
+    serif;
   --font-body: "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 
@@ -41,8 +42,16 @@ body {
   color: var(--ink);
   font-family: var(--font-body);
   background:
-    radial-gradient(1200px 600px at 12% -10%, rgba(20, 184, 166, 0.16), transparent 55%),
-    radial-gradient(900px 500px at 90% 0%, rgba(11, 31, 51, 0.1), transparent 50%),
+    radial-gradient(
+      1200px 600px at 12% -10%,
+      rgba(20, 184, 166, 0.16),
+      transparent 55%
+    ),
+    radial-gradient(
+      900px 500px at 90% 0%,
+      rgba(11, 31, 51, 0.1),
+      transparent 50%
+    ),
     linear-gradient(180deg, #eef3f8 0%, var(--paper) 42%, #e8eef5 100%);
 }
 
