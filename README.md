@@ -40,6 +40,8 @@ This repository establishes the engineering workflow for ILMOFAHM, a multi-tenan
 
 Vercel's **Root Directory** should be set to `apps/web`. Use npm and commit only `apps/web/package-lock.json` for the web app. Keep Supabase migrations and project docs at the repository root.
 
+Local Supabase (Docker + CLI): see [`supabase/README.md`](supabase/README.md). Quick helpers: `./scripts/supabase-local.sh start|reset|stop`.
+
 ## Start here
 
 Read `docs/00-brand-and-product.md` first and preserve the exact product name, tagline, and descriptor in user-facing work. The master requirements baseline is `docs/08-comprehensive-srs.md`; consult it when refining module scope or acceptance criteria.

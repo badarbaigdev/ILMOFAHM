@@ -5,9 +5,9 @@
 ### Local development
 
 - Run Next.js from `apps/web/`.
-- Run Supabase locally with the Supabase CLI/Docker when available.
-- Apply schema changes only through migrations.
-- Use synthetic seed data and test users.
+- Run Supabase locally with the Supabase CLI/Docker when available. Operator steps: [`../supabase/README.md`](../supabase/README.md) and `./scripts/supabase-local.sh`.
+- Apply schema changes only through ordered files in `supabase/migrations/`.
+- Use synthetic seed data and test users (`supabase/seed.sql`).
 
 ### Staging / preview
 
