@@ -14,6 +14,12 @@ export type AuditEventRow = {
   createdAt: string;
 };
 
+export type ListAuditEventsOptions = {
+  limit?: number;
+  /** When set, only return rows whose action is in this list. */
+  actions?: readonly string[];
+};
+
 /**
  * Lists recent audit events for an organization.
  * Caller must authorize `audit.read` first — this only queries under RLS.
@@ -21,16 +27,26 @@ export type AuditEventRow = {
 export async function listOrganizationAuditEvents(
   supabase: SupabaseClient,
   organizationId: string,
-  limit = 50,
+  options: ListAuditEventsOptions | number = 50,
 ): Promise<AuditEventRow[]> {
-  const { data, error } = await supabase
+  const opts: ListAuditEventsOptions =
+    typeof options === "number" ? { limit: options } : options;
+  const limit = Math.min(Math.max(opts.limit ?? 50, 1), 100);
+
+  let query = supabase
     .from("audit_events")
     .select(
       "id, action, target_type, target_id, outcome, actor_user_id, actor_role, metadata, created_at",
     )
     .eq("organization_id", organizationId)
     .order("created_at", { ascending: false })
-    .limit(Math.min(Math.max(limit, 1), 100));
+    .limit(limit);
+
+  if (opts.actions && opts.actions.length > 0) {
+    query = query.in("action", [...opts.actions]);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     throw new Error("Could not load audit events.");

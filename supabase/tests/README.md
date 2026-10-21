@@ -35,5 +35,6 @@ supabase test db
 | ILM-ORG-002 | `database/campus_setup.test.sql` — campus create/update allow/deny, contact validation, hard-delete revoked |
 | ILM-ORG-003 | `database/organization_locale_calendar.test.sql` — locale/working days/holidays allow/deny and validation |
 | ILM-ORG-004 | `database/organization_branding.test.sql` — branding/contact allow/deny, campus overrides, validation |
+| ILM-ORG-005 | `database/organization_config_audit.test.sql` — config audit before/after + actor_role |
 
 Do not claim tenant isolation for later modules until matching deny tests exist for those tables too.

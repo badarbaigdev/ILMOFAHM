@@ -199,6 +199,13 @@ await authorize(
 - RPCs `update_organization_branding` / `update_campus_branding_overrides` (manager-only, audited).
 - `resolveEffectiveBranding()` merges campus overrides for display.
 
+## Configuration audit (ILM-ORG-005)
+
+- Critical settings changes already emit `audit_events` with actor role, timestamp, and before/after metadata.
+- Catalog: `CONFIG_AUDIT_ACTIONS` in `src/features/institution/config-audit/`.
+- Settings shows a recent configuration-changes panel (`audit.read`); `/app/audit?category=config` filters the full log.
+- Effective time: `metadata.effective_at` when set, otherwise the row `created_at`.
+
 ## Brand
 
 See [`../../docs/00-brand-and-product.md`](../../docs/00-brand-and-product.md) for canonical product copy. Runtime brand strings live in `src/lib/brand.ts`.

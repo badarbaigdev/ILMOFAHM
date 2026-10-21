@@ -6,8 +6,11 @@ import { CalendarPanel } from "@/features/institution/calendar/calendar-panel";
 import { listOrganizationHolidays } from "@/features/institution/calendar/queries";
 import { CampusesPanel } from "@/features/institution/campuses/campuses-panel";
 import { listOrganizationCampuses } from "@/features/institution/campuses/queries";
+import { CONFIG_AUDIT_ACTIONS } from "@/features/institution/config-audit/catalog";
+import { ConfigChangesPanel } from "@/features/institution/config-audit/config-changes-panel";
 import { OrganizationProfileForm } from "@/features/institution/profile/profile-form";
 import { getOrganizationProfile } from "@/features/institution/profile/queries";
+import { listOrganizationAuditEvents } from "@/features/platform/audit/queries";
 import {
   authorize,
   can,
@@ -93,7 +96,7 @@ export default async function SettingsPage({
     throw authError;
   }
 
-  const [canUpdate, canManageCampuses] = await Promise.all([
+  const [canUpdate, canManageCampuses, canReadAudit] = await Promise.all([
     can(
       {
         organizationId: context.organization.id,
@@ -108,17 +111,33 @@ export default async function SettingsPage({
       },
       deps,
     ),
+    can(
+      {
+        organizationId: context.organization.id,
+        permission: "audit.read",
+      },
+      deps,
+    ),
   ]);
 
   let profile;
   let campuses;
   let holidays;
+  let configEvents: Awaited<ReturnType<typeof listOrganizationAuditEvents>> =
+    [];
   try {
     [profile, campuses, holidays] = await Promise.all([
       getOrganizationProfile(supabase, context.organization.id),
       listOrganizationCampuses(supabase, context.organization.id),
       listOrganizationHolidays(supabase, context.organization.id),
     ]);
+    if (canReadAudit) {
+      configEvents = await listOrganizationAuditEvents(
+        supabase,
+        context.organization.id,
+        { limit: 15, actions: CONFIG_AUDIT_ACTIONS },
+      );
+    }
   } catch {
     return (
       <main
@@ -221,6 +240,12 @@ export default async function SettingsPage({
         organizationId={profile.id}
         campuses={campuses}
         canManage={canManageCampuses}
+      />
+
+      <ConfigChangesPanel
+        organizationId={profile.id}
+        events={configEvents}
+        canReadAudit={canReadAudit}
       />
     </main>
   );
