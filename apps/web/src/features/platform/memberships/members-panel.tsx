@@ -165,14 +165,17 @@ function RevokeInviteForm({
 export function MembersPanel({
   organizationId,
   organizationName,
-  isManager,
+  canInvite,
+  canManageStatus,
   currentUserId,
   members,
   invitations,
 }: {
   organizationId: string;
   organizationName: string;
-  isManager: boolean;
+  /** UX only — mutations still call authorize() on the server. */
+  canInvite: boolean;
+  canManageStatus: boolean;
   currentUserId: string;
   members: OrgMemberRow[];
   invitations: PendingInvitationRow[];
@@ -206,7 +209,7 @@ export function MembersPanel({
                   {member.role} · {member.status}
                 </p>
               </div>
-              {isManager && member.userId !== currentUserId ? (
+              {canManageStatus && member.userId !== currentUserId ? (
                 <div className="flex flex-wrap gap-3">
                   {member.status !== "active" ? (
                     <StatusForm
@@ -239,7 +242,7 @@ export function MembersPanel({
         </ul>
       </section>
 
-      {isManager ? (
+      {canInvite ? (
         <>
           <section aria-labelledby="pending-heading" className="mt-10">
             <h2

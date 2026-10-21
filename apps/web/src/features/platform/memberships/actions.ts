@@ -1,9 +1,14 @@
 "use server";
 
-import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 import { ensureProfileForUser } from "@/features/auth/ensure-profile";
+import {
+  authorize,
+  createSupabaseAuthorizationDeps,
+  isAuthorizationError,
+} from "@/features/platform/authorization";
 import { getServerEnv } from "@/lib/env";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
@@ -65,6 +70,19 @@ export async function createInvitationAction(
   const profile = await ensureProfileForUser(supabase, user);
   if (!profile.ok) {
     return { error: profile.message, success: null };
+  }
+
+  try {
+    // Body organization_id is re-validated via active membership + permission.
+    await authorize(
+      { organizationId, permission: "membership.invite" },
+      createSupabaseAuthorizationDeps(supabase, { user }),
+    );
+  } catch (error) {
+    if (isAuthorizationError(error)) {
+      return { error: error.message, success: null };
+    }
+    throw error;
   }
 
   const { data, error } = await supabase.rpc("create_organization_invitation", {
@@ -132,8 +150,24 @@ export async function revokeInvitationAction(
   if (!isUuid(invitationId)) {
     return { error: "Invitation is required.", success: null };
   }
+  if (!isUuid(organizationId)) {
+    return { error: "Organization is required.", success: null };
+  }
 
-  const { supabase } = await requireUser();
+  const { supabase, user } = await requireUser();
+
+  try {
+    await authorize(
+      { organizationId, permission: "membership.invite" },
+      createSupabaseAuthorizationDeps(supabase, { user }),
+    );
+  } catch (error) {
+    if (isAuthorizationError(error)) {
+      return { error: error.message, success: null };
+    }
+    throw error;
+  }
+
   const { error } = await supabase.rpc("revoke_organization_invitation", {
     p_invitation_id: invitationId,
   });
@@ -146,9 +180,7 @@ export async function revokeInvitationAction(
   }
 
   revalidatePath("/app/members");
-  if (isUuid(organizationId)) {
-    revalidatePath(`/app/members?organization=${organizationId}`);
-  }
+  revalidatePath(`/app/members?organization=${organizationId}`);
   return { error: null, success: "Invitation revoked." };
 }
 
@@ -163,11 +195,27 @@ export async function setMembershipStatusAction(
   if (!isUuid(membershipId)) {
     return { error: "Membership is required.", success: null };
   }
+  if (!isUuid(organizationId)) {
+    return { error: "Organization is required.", success: null };
+  }
   if (!MEMBERSHIP_STATUSES.has(status)) {
     return { error: "Invalid status.", success: null };
   }
 
-  const { supabase } = await requireUser();
+  const { supabase, user } = await requireUser();
+
+  try {
+    await authorize(
+      { organizationId, permission: "membership.manage_status" },
+      createSupabaseAuthorizationDeps(supabase, { user }),
+    );
+  } catch (error) {
+    if (isAuthorizationError(error)) {
+      return { error: error.message, success: null };
+    }
+    throw error;
+  }
+
   const { error } = await supabase.rpc("set_membership_status", {
     p_membership_id: membershipId,
     p_status: status,
@@ -193,9 +241,7 @@ export async function setMembershipStatusAction(
   }
 
   revalidatePath("/app/members");
-  if (isUuid(organizationId)) {
-    revalidatePath(`/app/members?organization=${organizationId}`);
-  }
+  revalidatePath(`/app/members?organization=${organizationId}`);
   return { error: null, success: `Membership marked ${status}.` };
 }
 

@@ -123,6 +123,33 @@ Apply locally:
 cd apps/web && npm run dev
 ```
 
+## Authorization helpers (ILM-PLAT-007)
+
+Server-side gate: `authorize()` / `can()` in `src/features/platform/authorization/`.
+
+1. Resolve the signed-in user from the session (never from the request body).
+2. Load an **active** membership for the requested `organizationId` from the database.
+3. Check the role → permission matrix (`permissions.ts`).
+4. Optionally enforce campus / class / guardian-student scope. Class and guardian links fail closed until those modules supply real checkers.
+
+UI flags (e.g. showing an Invite button) are UX only. Mutations must call `authorize()` (and RLS/RPC still enforce independently).
+
+```ts
+import {
+  authorize,
+  createSupabaseAuthorizationDeps,
+} from "@/features/platform/authorization";
+
+await authorize(
+  {
+    organizationId,
+    permission: "membership.invite",
+    // scope: { type: "campus", campusId },
+  },
+  createSupabaseAuthorizationDeps(supabase, { user }),
+);
+```
+
 ## Memberships and invitations (ILM-PLAT-006)
 
 - Managers (owner/admin): `/app/members` — invite by email/role, revoke pending invites, suspend/reactivate/revoke members.

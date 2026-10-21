@@ -1,6 +1,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import {
+  authorize,
+  createSupabaseAuthorizationDeps,
+  isAuthorizationError,
+} from "@/features/platform/authorization";
 import { MembersPanel } from "@/features/platform/memberships/members-panel";
 import {
   listOrganizationMembers,
@@ -27,13 +32,11 @@ export default async function MembersPage({ searchParams }: MembersPageProps) {
 
   let memberships;
   let selected;
-  let isManager;
+  let canInvite;
+  let canManageStatus;
   try {
-    ({ memberships, selected, isManager } = await resolveManagedOrganization(
-      supabase,
-      user.id,
-      params.organization,
-    ));
+    ({ memberships, selected, canInvite, canManageStatus } =
+      await resolveManagedOrganization(supabase, user.id, params.organization));
   } catch {
     return (
       <main
@@ -55,11 +58,40 @@ export default async function MembersPage({ searchParams }: MembersPageProps) {
     redirect("/app/onboarding");
   }
 
+  try {
+    // Re-check membership.read for the resolved org — query param is not authority.
+    await authorize(
+      {
+        organizationId: selected.organizationId,
+        permission: "membership.read",
+      },
+      createSupabaseAuthorizationDeps(supabase, { user }),
+    );
+  } catch (authError) {
+    if (isAuthorizationError(authError)) {
+      return (
+        <main
+          id="main-content"
+          tabIndex={-1}
+          className="mx-auto w-full max-w-5xl px-6 py-16 outline-none sm:px-10"
+        >
+          <h1 className="font-display text-4xl tracking-tight text-ink">
+            Members
+          </h1>
+          <p role="alert" className="mt-4 text-sm text-red-700">
+            {authError.message}
+          </p>
+        </main>
+      );
+    }
+    throw authError;
+  }
+
   let members;
   let invitations;
   try {
     members = await listOrganizationMembers(supabase, selected.organizationId);
-    invitations = isManager
+    invitations = canInvite
       ? await listPendingInvitations(supabase, selected.organizationId)
       : [];
   } catch {
@@ -120,7 +152,8 @@ export default async function MembersPage({ searchParams }: MembersPageProps) {
       <MembersPanel
         organizationId={selected.organizationId}
         organizationName={selected.organizationName}
-        isManager={isManager}
+        canInvite={canInvite}
+        canManageStatus={canManageStatus}
         currentUserId={user.id}
         members={members}
         invitations={invitations}

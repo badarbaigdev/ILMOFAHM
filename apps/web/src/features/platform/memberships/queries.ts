@@ -3,6 +3,10 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import {
+  can,
+  createSupabaseAuthorizationDeps,
+} from "@/features/platform/authorization";
+import {
   type ActiveMembershipSummary,
   listActiveMemberships,
 } from "@/features/platform/onboarding/memberships";
@@ -24,6 +28,11 @@ export type PendingInvitationRow = {
   createdAt: string;
 };
 
+/**
+ * Resolves which organization the UI should show.
+ * `canInvite` / `canManageStatus` come from authorize()/can() — not from
+ * comparing role strings in the page alone.
+ */
 export async function resolveManagedOrganization(
   supabase: SupabaseClient,
   userId: string,
@@ -31,17 +40,44 @@ export async function resolveManagedOrganization(
 ): Promise<{
   memberships: ActiveMembershipSummary[];
   selected: ActiveMembershipSummary | null;
-  isManager: boolean;
+  canInvite: boolean;
+  canManageStatus: boolean;
 }> {
   const memberships = await listActiveMemberships(supabase, userId);
   const selected =
     memberships.find((m) => m.organizationId === requestedOrgId) ??
     memberships[0] ??
     null;
-  const isManager =
-    selected != null &&
-    (selected.role === "owner" || selected.role === "admin");
-  return { memberships, selected, isManager };
+
+  if (!selected) {
+    return {
+      memberships,
+      selected: null,
+      canInvite: false,
+      canManageStatus: false,
+    };
+  }
+
+  const deps = createSupabaseAuthorizationDeps(supabase, { userId });
+
+  const [canInvite, canManageStatus] = await Promise.all([
+    can(
+      {
+        organizationId: selected.organizationId,
+        permission: "membership.invite",
+      },
+      deps,
+    ),
+    can(
+      {
+        organizationId: selected.organizationId,
+        permission: "membership.manage_status",
+      },
+      deps,
+    ),
+  ]);
+
+  return { memberships, selected, canInvite, canManageStatus };
 }
 
 export async function listOrganizationMembers(
