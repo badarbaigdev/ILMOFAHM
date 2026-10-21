@@ -7,11 +7,12 @@ import {
   isAuthorizationError,
 } from "@/features/platform/authorization";
 import { listOrganizationAuditEvents } from "@/features/platform/audit/queries";
-import { listActiveMemberships } from "@/features/platform/onboarding/memberships";
+import { ContextSelector } from "@/features/platform/context";
+import { loadWorkspaceContext } from "@/features/platform/context/load";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 type AuditPageProps = {
-  searchParams: Promise<{ organization?: string }>;
+  searchParams: Promise<{ organization?: string; campus?: string }>;
 };
 
 export default async function AuditPage({ searchParams }: AuditPageProps) {
@@ -26,9 +27,12 @@ export default async function AuditPage({ searchParams }: AuditPageProps) {
     redirect("/auth/sign-in?next=/app/audit");
   }
 
-  let memberships;
+  let context;
   try {
-    memberships = await listActiveMemberships(supabase, user.id);
+    context = await loadWorkspaceContext(supabase, user.id, {
+      organizationId: params.organization,
+      campusId: params.campus,
+    });
   } catch {
     return (
       <main
@@ -44,18 +48,14 @@ export default async function AuditPage({ searchParams }: AuditPageProps) {
     );
   }
 
-  if (memberships.length === 0) {
+  if (!context) {
     redirect("/app/onboarding");
   }
-
-  const selected =
-    memberships.find((m) => m.organizationId === params.organization) ??
-    memberships[0];
 
   try {
     await authorize(
       {
-        organizationId: selected.organizationId,
+        organizationId: context.organization.id,
         permission: "audit.read",
       },
       createSupabaseAuthorizationDeps(supabase, { user }),
@@ -76,7 +76,7 @@ export default async function AuditPage({ searchParams }: AuditPageProps) {
           </p>
           <p className="mt-4 text-sm">
             <Link
-              href={`/app?organization=${selected.organizationId}`}
+              href={`/app?organization=${context.organization.id}`}
               className="text-ink-soft underline"
             >
               Back to workspace
@@ -92,7 +92,7 @@ export default async function AuditPage({ searchParams }: AuditPageProps) {
   try {
     events = await listOrganizationAuditEvents(
       supabase,
-      selected.organizationId,
+      context.organization.id,
     );
   } catch {
     return (
@@ -117,25 +117,35 @@ export default async function AuditPage({ searchParams }: AuditPageProps) {
     >
       <p className="text-sm text-muted">
         <Link
-          href={`/app?organization=${selected.organizationId}`}
+          href={`/app?organization=${context.organization.id}`}
           className="underline"
         >
           Workspace
         </Link>
         {" · "}
         <Link
-          href={`/app/members?organization=${selected.organizationId}`}
+          href={`/app/members?organization=${context.organization.id}`}
           className="underline"
         >
           Members
         </Link>
       </p>
 
+      <div className="mt-4">
+        <ContextSelector
+          organizations={context.organizations}
+          campuses={context.allCampuses}
+          organizationId={context.organization.id}
+          campusId={context.campus?.id ?? null}
+          returnTo="/app/audit"
+        />
+      </div>
+
       <h1 className="mt-6 font-display text-4xl tracking-tight text-ink">
         Audit log
       </h1>
       <p className="mt-3 max-w-2xl text-muted">
-        Privileged actions for {selected.organizationName}. Entries are
+        Privileged actions for {context.organization.name}. Entries are
         append-only; secrets and tokens are never stored.
       </p>
 

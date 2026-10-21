@@ -2,16 +2,17 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { signOutAction } from "@/features/auth/actions";
-import { listActiveMemberships } from "@/features/platform/onboarding/memberships";
+import { ContextSelector } from "@/features/platform/context";
+import { loadWorkspaceContext } from "@/features/platform/context/load";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 type AppHomePageProps = {
-  searchParams: Promise<{ organization?: string }>;
+  searchParams: Promise<{ organization?: string; campus?: string }>;
 };
 
 /**
  * Protected workspace. Identity is re-checked with getUser().
- * Organization list comes from memberships (RLS), not client-supplied IDs.
+ * Context selector preferences are cookies/query hints only — not authorization.
  */
 export default async function AppHomePage({ searchParams }: AppHomePageProps) {
   const params = await searchParams;
@@ -31,9 +32,12 @@ export default async function AppHomePage({ searchParams }: AppHomePageProps) {
     .eq("id", user.id)
     .maybeSingle();
 
-  let memberships;
+  let context;
   try {
-    memberships = await listActiveMemberships(supabase, user.id);
+    context = await loadWorkspaceContext(supabase, user.id, {
+      organizationId: params.organization,
+      campusId: params.campus,
+    });
   } catch {
     return (
       <main
@@ -45,21 +49,15 @@ export default async function AppHomePage({ searchParams }: AppHomePageProps) {
           Workspace
         </h1>
         <p role="alert" className="mt-4 text-sm text-red-700">
-          Could not load your organizations. Please try again shortly.
+          Could not load your workspace context. Please try again shortly.
         </p>
       </main>
     );
   }
 
-  if (memberships.length === 0) {
+  if (!context) {
     redirect("/app/onboarding");
   }
-
-  // Optional ?organization= is display preference only — never authorization.
-  const requestedOrgId = params.organization?.trim();
-  const selected =
-    memberships.find((m) => m.organizationId === requestedOrgId) ??
-    memberships[0];
 
   return (
     <main
@@ -72,54 +70,53 @@ export default async function AppHomePage({ searchParams }: AppHomePageProps) {
       </h1>
       <p className="mt-4 max-w-2xl text-muted">
         You are signed in
-        {profile?.full_name ? ` as ${profile.full_name}` : ""}. Context
-        switching and role-scoped modules arrive in later milestones.
+        {profile?.full_name ? ` as ${profile.full_name}` : ""}. Context below is
+        a navigation preference — permissions are checked on the server for each
+        action.
       </p>
 
-      <section aria-labelledby="orgs-heading" className="mt-10">
+      <section aria-labelledby="context-heading" className="mt-10">
         <h2
-          id="orgs-heading"
+          id="context-heading"
           className="text-sm font-semibold tracking-wide text-ink uppercase"
         >
-          Your organizations
+          Active context
         </h2>
-        <ul className="mt-4 space-y-3">
-          {memberships.map((membership) => {
-            const isSelected =
-              membership.organizationId === selected.organizationId;
-            return (
-              <li key={membership.organizationId}>
-                <Link
-                  href={`/app?organization=${membership.organizationId}`}
-                  className={
-                    isSelected
-                      ? "block border-b border-teal pb-2 text-ink"
-                      : "block border-b border-line pb-2 text-ink-soft hover:text-ink"
-                  }
-                  aria-current={isSelected ? "page" : undefined}
-                >
-                  <span className="font-medium">
-                    {membership.organizationName}
-                  </span>
-                  <span className="mt-1 block text-sm text-muted">
-                    Role: {membership.role}
-                  </span>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+        <div className="mt-4">
+          <ContextSelector
+            organizations={context.organizations}
+            campuses={context.allCampuses}
+            organizationId={context.organization.id}
+            campusId={context.campus?.id ?? null}
+            returnTo="/app"
+          />
+        </div>
+        <p className="mt-3 text-sm text-ink-soft">
+          <span className="font-medium text-ink">
+            {context.organization.name}
+          </span>
+          {context.campus ? ` · ${context.campus.name}` : " · No campus"}
+          <span className="text-muted">
+            {" "}
+            · role {context.organization.role}
+          </span>
+        </p>
+        {context.ignoredInvalidSelection ? (
+          <p className="mt-2 text-sm text-muted">
+            An invalid organization or campus selection was ignored.
+          </p>
+        ) : null}
       </section>
 
       <p className="mt-8 flex flex-wrap gap-x-4 gap-y-2 text-sm text-muted">
         <Link
-          href={`/app/members?organization=${selected.organizationId}`}
+          href={`/app/members?organization=${context.organization.id}`}
           className="text-ink-soft underline"
         >
           Manage members
         </Link>
         <Link
-          href={`/app/audit?organization=${selected.organizationId}`}
+          href={`/app/audit?organization=${context.organization.id}`}
           className="text-ink-soft underline"
         >
           Audit log

@@ -125,5 +125,16 @@ export async function provisionOrganizationAction(
     };
   }
 
-  redirect(`/app?organization=${row.organization_id}`);
+  const { writeContextCookies } =
+    await import("@/features/platform/context/cookies");
+  await writeContextCookies({
+    organizationId: row.organization_id,
+    campusId: row.campus_id ?? null,
+  });
+
+  redirect(
+    `/app?organization=${row.organization_id}${
+      row.campus_id ? `&campus=${row.campus_id}` : ""
+    }`,
+  );
 }

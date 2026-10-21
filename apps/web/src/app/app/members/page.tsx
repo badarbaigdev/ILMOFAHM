@@ -3,19 +3,21 @@ import { redirect } from "next/navigation";
 
 import {
   authorize,
+  can,
   createSupabaseAuthorizationDeps,
   isAuthorizationError,
 } from "@/features/platform/authorization";
+import { ContextSelector } from "@/features/platform/context";
+import { loadWorkspaceContext } from "@/features/platform/context/load";
 import { MembersPanel } from "@/features/platform/memberships/members-panel";
 import {
   listOrganizationMembers,
   listPendingInvitations,
-  resolveManagedOrganization,
 } from "@/features/platform/memberships/queries";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 type MembersPageProps = {
-  searchParams: Promise<{ organization?: string }>;
+  searchParams: Promise<{ organization?: string; campus?: string }>;
 };
 
 export default async function MembersPage({ searchParams }: MembersPageProps) {
@@ -30,13 +32,12 @@ export default async function MembersPage({ searchParams }: MembersPageProps) {
     redirect("/auth/sign-in?next=/app/members");
   }
 
-  let memberships;
-  let selected;
-  let canInvite;
-  let canManageStatus;
+  let context;
   try {
-    ({ memberships, selected, canInvite, canManageStatus } =
-      await resolveManagedOrganization(supabase, user.id, params.organization));
+    context = await loadWorkspaceContext(supabase, user.id, {
+      organizationId: params.organization,
+      campusId: params.campus,
+    });
   } catch {
     return (
       <main
@@ -54,18 +55,19 @@ export default async function MembersPage({ searchParams }: MembersPageProps) {
     );
   }
 
-  if (!selected) {
+  if (!context) {
     redirect("/app/onboarding");
   }
 
+  const deps = createSupabaseAuthorizationDeps(supabase, { user });
+
   try {
-    // Re-check membership.read for the resolved org — query param is not authority.
     await authorize(
       {
-        organizationId: selected.organizationId,
+        organizationId: context.organization.id,
         permission: "membership.read",
       },
-      createSupabaseAuthorizationDeps(supabase, { user }),
+      deps,
     );
   } catch (authError) {
     if (isAuthorizationError(authError)) {
@@ -87,12 +89,29 @@ export default async function MembersPage({ searchParams }: MembersPageProps) {
     throw authError;
   }
 
+  const [canInvite, canManageStatus] = await Promise.all([
+    can(
+      {
+        organizationId: context.organization.id,
+        permission: "membership.invite",
+      },
+      deps,
+    ),
+    can(
+      {
+        organizationId: context.organization.id,
+        permission: "membership.manage_status",
+      },
+      deps,
+    ),
+  ]);
+
   let members;
   let invitations;
   try {
-    members = await listOrganizationMembers(supabase, selected.organizationId);
+    members = await listOrganizationMembers(supabase, context.organization.id);
     invitations = canInvite
-      ? await listPendingInvitations(supabase, selected.organizationId)
+      ? await listPendingInvitations(supabase, context.organization.id)
       : [];
   } catch {
     return (
@@ -121,37 +140,25 @@ export default async function MembersPage({ searchParams }: MembersPageProps) {
       <div className="mx-auto w-full max-w-5xl px-6 pt-10 sm:px-10">
         <p className="text-sm text-muted">
           <Link
-            href={`/app?organization=${selected.organizationId}`}
+            href={`/app?organization=${context.organization.id}`}
             className="underline"
           >
             Workspace
           </Link>
-          {memberships.length > 1 ? (
-            <>
-              {" · "}
-              Organizations:{" "}
-              {memberships.map((m, index) => (
-                <span key={m.organizationId}>
-                  {index > 0 ? ", " : null}
-                  <Link
-                    href={`/app/members?organization=${m.organizationId}`}
-                    className={
-                      m.organizationId === selected.organizationId
-                        ? "font-medium text-ink"
-                        : "text-ink-soft underline"
-                    }
-                  >
-                    {m.organizationName}
-                  </Link>
-                </span>
-              ))}
-            </>
-          ) : null}
         </p>
+        <div className="mt-4">
+          <ContextSelector
+            organizations={context.organizations}
+            campuses={context.allCampuses}
+            organizationId={context.organization.id}
+            campusId={context.campus?.id ?? null}
+            returnTo="/app/members"
+          />
+        </div>
       </div>
       <MembersPanel
-        organizationId={selected.organizationId}
-        organizationName={selected.organizationName}
+        organizationId={context.organization.id}
+        organizationName={context.organization.name}
         canInvite={canInvite}
         canManageStatus={canManageStatus}
         currentUserId={user.id}

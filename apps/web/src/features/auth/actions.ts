@@ -115,8 +115,11 @@ export async function signUpAction(
 }
 
 export async function signOutAction(): Promise<void> {
+  const { clearContextCookies } =
+    await import("@/features/platform/context/cookies");
   const supabase = await createServerSupabaseClient();
   await supabase.auth.signOut();
+  await clearContextCookies();
   redirect("/");
 }
 

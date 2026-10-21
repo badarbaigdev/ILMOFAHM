@@ -156,6 +156,14 @@ await authorize(
 - Invite link: `/auth/accept-invite?token=…` (token shown once in the UI; SHA-256 stored in DB). Email delivery is not wired yet — copy the link locally.
 - Accept attaches the signed-in user only when their Auth email matches the invite, and only to that invitation’s organization.
 
+## Workspace context selector (ILM-PLAT-009)
+
+- Server helper `loadWorkspaceContext()` resolves org/campus from **membership-visible** rows only.
+- Preferences: httpOnly cookies (`ilm_organization_id`, `ilm_campus_id`) + optional query hints.
+- Invalid / cross-tenant IDs are ignored (fall back) without leaking other tenants.
+- Switching runs `switchWorkspaceContextAction` → revalidate `/app` layout. **Cookies are never authorization** — always call `authorize()`.
+- UI: `ContextSelector` on `/app`, `/app/members`, `/app/audit`.
+
 ## Audit events (ILM-PLAT-008)
 
 - Table `audit_events`: actor, organization, action, target, outcome, timestamp, sanitized metadata (append-only).
