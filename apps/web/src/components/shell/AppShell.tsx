@@ -1,7 +1,8 @@
 import Link from "next/link";
 
-import { WorkspaceNav } from "@/components/shell/WorkspaceNav";
+import { SignedInNav } from "@/components/shell/SignedInNav";
 import { signOutAction } from "@/features/auth/actions";
+import { isActivePlatformOperator } from "@/features/platform/operator/authorize-platform";
 import { brand } from "@/lib/brand";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
@@ -18,19 +19,33 @@ type AppShellProps = {
 
 /**
  * Site shell: brand lockup + account controls.
- * Signed-in users get workspace navigation; guests see planned-module placeholders.
+ * Signed-in users get workspace or platform navigation.
  */
 export async function AppShell({ children }: AppShellProps) {
   let user: { id: string } | null = null;
+  let isPlatformOperator = false;
   try {
     const supabase = await createServerSupabaseClient();
     const {
       data: { user: sessionUser },
     } = await supabase.auth.getUser();
     user = sessionUser;
+    if (sessionUser) {
+      isPlatformOperator = await isActivePlatformOperator(
+        supabase,
+        sessionUser.id,
+      );
+    }
   } catch {
     user = null;
+    isPlatformOperator = false;
   }
+
+  const homeHref = user
+    ? isPlatformOperator
+      ? "/platform"
+      : "/app"
+    : "/";
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -45,7 +60,7 @@ export async function AppShell({ children }: AppShellProps) {
               {brand.institutionalLabel}
             </p>
             <Link
-              href={user ? "/app" : "/"}
+              href={homeHref}
               className="font-display text-2xl tracking-tight text-ink no-underline hover:text-ink-soft"
             >
               {brand.productName}
@@ -54,7 +69,7 @@ export async function AppShell({ children }: AppShellProps) {
 
           <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
             {user ? (
-              <WorkspaceNav />
+              <SignedInNav isPlatformOperator={isPlatformOperator} />
             ) : (
               <nav aria-label="Planned modules" className="min-w-0">
                 <ul className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-muted">

@@ -4,7 +4,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { EnvValidationError, getPublicEnv } from "@/lib/env";
 
 /**
- * Refreshes the Auth session cookies and guards `/app` routes.
+ * Refreshes the Auth session cookies and guards `/app` and `/platform` routes.
  * Uses getUser() so expired/missing sessions fail closed on the server.
  */
 export async function updateSession(request: NextRequest) {
@@ -14,6 +14,9 @@ export async function updateSession(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
   const isAppRoute = pathname === "/app" || pathname.startsWith("/app/");
+  const isPlatformRoute =
+    pathname === "/platform" || pathname.startsWith("/platform/");
+  const isProtectedRoute = isAppRoute || isPlatformRoute;
 
   let supabaseUrl: string;
   let supabasePublishableKey: string;
@@ -21,8 +24,7 @@ export async function updateSession(request: NextRequest) {
     ({ supabaseUrl, supabasePublishableKey } = getPublicEnv());
   } catch (error) {
     if (error instanceof EnvValidationError) {
-      // Misconfigured env: do not crash every page. Fail closed on /app.
-      if (isAppRoute) {
+      if (isProtectedRoute) {
         const redirectUrl = request.nextUrl.clone();
         redirectUrl.pathname = "/auth/sign-in";
         redirectUrl.searchParams.set("next", pathname);
@@ -57,7 +59,7 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (isAppRoute && !user) {
+  if (isProtectedRoute && !user) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/auth/sign-in";
     redirectUrl.searchParams.set("next", pathname);
@@ -65,8 +67,15 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (user && (pathname === "/auth/sign-in" || pathname === "/auth/sign-up")) {
+    const { data: operator } = await supabase
+      .from("platform_operators")
+      .select("user_id")
+      .eq("user_id", user.id)
+      .eq("status", "active")
+      .maybeSingle();
+
     const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = "/app";
+    redirectUrl.pathname = operator ? "/platform" : "/app";
     redirectUrl.search = "";
     return NextResponse.redirect(redirectUrl);
   }

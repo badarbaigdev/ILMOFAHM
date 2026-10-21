@@ -1,13 +1,17 @@
 import { NextResponse } from "next/server";
 
 import { ensureProfileForUser } from "@/features/auth/ensure-profile";
-import { safeAuthNextPath } from "@/features/auth/paths";
+import {
+  defaultPostAuthPath,
+  safeAuthNextPath,
+} from "@/features/auth/paths";
+import { isActivePlatformOperator } from "@/features/platform/operator/authorize-platform";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = safeAuthNextPath(searchParams.get("next"));
+  const requestedNext = searchParams.get("next");
 
   if (!code) {
     return NextResponse.redirect(
@@ -29,6 +33,16 @@ export async function GET(request: Request) {
     return NextResponse.redirect(
       `${origin}/auth/sign-in?error=profile_bootstrap_failed`,
     );
+  }
+
+  const isOperator = await isActivePlatformOperator(supabase, data.user.id);
+  const fallback = defaultPostAuthPath(isOperator);
+  let next = safeAuthNextPath(requestedNext, fallback);
+  if (
+    isOperator &&
+    (next === "/app" || next === "/app/" || !requestedNext)
+  ) {
+    next = "/platform";
   }
 
   return NextResponse.redirect(`${origin}${next}`);

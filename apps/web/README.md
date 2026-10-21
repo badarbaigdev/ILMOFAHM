@@ -91,18 +91,42 @@ Cookie session via `@supabase/ssr`. Middleware refreshes the session and guards 
 
 | Route                   | Purpose                                                  |
 | ----------------------- | -------------------------------------------------------- |
-| `/auth/sign-in`         | Email/password sign-in                                   |
+| `/auth/sign-in`         | Email/password sign-in (shared; Superadmin and org admin) |
 | `/auth/sign-up`         | Account + `profiles` bootstrap (no org yet)              |
 | `/auth/forgot-password` | Password reset email (Mailpit locally)                   |
 | `/auth/update-password` | Set new password after recovery callback                 |
 | `/auth/callback`        | PKCE code exchange; then redirects to a safe `next` path |
-| `/app`                  | Signed-in workspace placeholder                          |
+| `/app`                  | Organization workspace (owner/admin and staff)           |
+| `/platform`             | Platform operator (Superadmin) console                   |
+| `/platform/organizations` | List/create tenants and assign org admins              |
 
 Local redirects are already allow-listed in `supabase/config.toml` (`site_url` + `additional_redirect_urls`). Hosted Auth URL config: [`../../docs/09-vercel-preview-runbook.md`](../../docs/09-vercel-preview-runbook.md).
 
 Fill `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` in `.env.local` from `supabase status` before exercising Auth locally. Empty placeholders will break runtime Auth calls.
 
 Profile rows are inserted with the user session client under RLS (`src/features/auth/ensure-profile.ts`). Membership/authorization is **not** on `profiles`.
+
+## Platform operator / Superadmin
+
+Platform operators are **not** organization members. They are rows in `platform_operators` and use the same Auth sign-in.
+
+| URL | Who |
+| --- | --- |
+| `/auth/sign-in` | Superadmin login (same form as org users) |
+| `/platform` | Superadmin dashboard (stats + recent orgs) |
+| `/platform/organizations` | All organizations |
+| `/platform/organizations/new` | Create org + assign/create org admin |
+
+After sign-in, active operators are redirected to `/platform`. Organization admins land on `/app` and cannot access `/platform` (server redirect). Operators do not automatically receive tenant academic/student access via RLS.
+
+**Local bootstrap** (after signing up the operator account):
+
+```bash
+# repo root — local Supabase must be running
+./scripts/bootstrap-platform-operator.sh your-operator@example.test
+```
+
+Creating an organization as Superadmin requires `SUPABASE_SECRET_KEY` in `apps/web/.env.local` (service role) so new Auth users can be created when the admin email is new.
 
 ## Organization onboarding (ILM-PLAT-005)
 

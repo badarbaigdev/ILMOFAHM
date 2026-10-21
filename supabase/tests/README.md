@@ -39,5 +39,6 @@ supabase test db
 | ILM-ACA-001 | `database/academic_years_terms.test.sql` — years/terms allow/deny, term range, audit |
 | ILM-ACA-002 | `database/school_structure.test.sql` — grades/sections/subjects; academy-only denied |
 | ILM-ACA-003 | `database/academy_structure.test.sql` — courses/cohorts; school-only denied |
+| Platform operator | `database/platform_operators.test.sql` — Superadmin provision allow/deny; org admin cannot use platform RPCs |
 
 Do not claim tenant isolation for later modules until matching deny tests exist for those tables too.

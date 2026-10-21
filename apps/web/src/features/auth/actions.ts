@@ -2,8 +2,13 @@
 
 import { redirect } from "next/navigation";
 
-import { buildAuthCallbackUrl, safeAuthNextPath } from "@/features/auth/paths";
+import {
+  buildAuthCallbackUrl,
+  defaultPostAuthPath,
+  safeAuthNextPath,
+} from "@/features/auth/paths";
 import { ensureProfileForUser } from "@/features/auth/ensure-profile";
+import { isActivePlatformOperator } from "@/features/platform/operator/authorize-platform";
 import { getServerEnv } from "@/lib/env";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
@@ -43,7 +48,7 @@ export async function signInAction(
     };
   }
 
-  const next = safeAuthNextPath(String(formData.get("next") ?? "/app"));
+  const requestedNext = String(formData.get("next") ?? "").trim();
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase.auth.signInWithPassword({
     email: parsed.email,
@@ -60,6 +65,20 @@ export async function signInAction(
   const profile = await ensureProfileForUser(supabase, data.user);
   if (!profile.ok) {
     return { error: profile.message, success: null };
+  }
+
+  const isOperator = await isActivePlatformOperator(supabase, data.user.id);
+  const fallback = defaultPostAuthPath(isOperator);
+  const next = requestedNext
+    ? safeAuthNextPath(requestedNext, fallback)
+    : fallback;
+
+  // Default workspace home: operators land on the platform console.
+  if (
+    isOperator &&
+    (next === "/app" || next === "/app/" || !requestedNext)
+  ) {
+    redirect("/platform");
   }
 
   redirect(next);
