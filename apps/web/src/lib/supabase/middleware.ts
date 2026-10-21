@@ -6,6 +6,8 @@ import { EnvValidationError, getPublicEnv } from "@/lib/env";
 /**
  * Refreshes the Auth session cookies and guards `/app` and `/platform` routes.
  * Uses getUser() so expired/missing sessions fail closed on the server.
+ * Platform console (except bootstrap/unauthorized) also requires an active
+ * platform_operators row — not merely a signed-in school/org user.
  */
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -16,6 +18,8 @@ export async function updateSession(request: NextRequest) {
   const isAppRoute = pathname === "/app" || pathname.startsWith("/app/");
   const isPlatformRoute =
     pathname === "/platform" || pathname.startsWith("/platform/");
+  const isPlatformBootstrap = pathname === "/platform/bootstrap";
+  const isPlatformUnauthorized = pathname === "/platform/unauthorized";
   const isProtectedRoute = isAppRoute || isPlatformRoute;
 
   let supabaseUrl: string;
@@ -78,6 +82,27 @@ export async function updateSession(request: NextRequest) {
     redirectUrl.pathname = operator ? "/platform" : "/app";
     redirectUrl.search = "";
     return NextResponse.redirect(redirectUrl);
+  }
+
+  if (
+    user &&
+    isPlatformRoute &&
+    !isPlatformBootstrap &&
+    !isPlatformUnauthorized
+  ) {
+    const { data: operator } = await supabase
+      .from("platform_operators")
+      .select("user_id")
+      .eq("user_id", user.id)
+      .eq("status", "active")
+      .maybeSingle();
+
+    if (!operator) {
+      const redirectUrl = request.nextUrl.clone();
+      redirectUrl.pathname = "/platform/unauthorized";
+      redirectUrl.search = "";
+      return NextResponse.redirect(redirectUrl);
+    }
   }
 
   return supabaseResponse;

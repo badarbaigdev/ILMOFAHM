@@ -110,6 +110,12 @@ export default async function PlatformDashboardPage() {
         >
           Create organization
         </Link>
+        <Link
+          href="/platform/operators"
+          className="font-medium text-ink underline-offset-2 hover:underline"
+        >
+          Manage operators
+        </Link>
       </p>
 
       <section aria-labelledby="recent-heading" className="mt-12">

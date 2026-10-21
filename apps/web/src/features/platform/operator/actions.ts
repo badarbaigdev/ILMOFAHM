@@ -239,3 +239,120 @@ export async function platformCreateOrganizationAction(
     createdAdmin: null,
   };
 }
+
+export type PlatformBootstrapActionState = {
+  error: string | null;
+  success: string | null;
+};
+
+/**
+ * First-operator bootstrap. Succeeds only while no active operator exists.
+ * After that the database permanently rejects bootstrap.
+ */
+export async function bootstrapFirstPlatformOperatorAction(
+  _prev: PlatformBootstrapActionState,
+  formData: FormData,
+): Promise<PlatformBootstrapActionState> {
+  void _prev;
+  void formData;
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return {
+      error: "Sign in first, then run platform bootstrap.",
+      success: null,
+    };
+  }
+
+  const { error } = await supabase.rpc("bootstrap_first_platform_operator");
+  if (error) {
+    if (
+      error.message?.includes("disabled") ||
+      error.message?.includes("already exists")
+    ) {
+      return {
+        error:
+          "Platform bootstrap is disabled because an active operator already exists.",
+        success: null,
+      };
+    }
+    return {
+      error: error.message || "Could not complete platform bootstrap.",
+      success: null,
+    };
+  }
+
+  revalidatePath("/platform");
+  redirect("/platform");
+}
+
+export type PlatformOperatorStatusActionState = {
+  error: string | null;
+  success: string | null;
+};
+
+/**
+ * Suspend, revoke, or reactivate a platform operator (active operators only).
+ */
+export async function setPlatformOperatorStatusAction(
+  _prev: PlatformOperatorStatusActionState,
+  formData: FormData,
+): Promise<PlatformOperatorStatusActionState> {
+  const targetUserId = String(formData.get("user_id") ?? "").trim();
+  const status = String(formData.get("status") ?? "").trim();
+
+  if (!targetUserId) {
+    return { error: "Operator user id is required.", success: null };
+  }
+  if (!["active", "suspended", "revoked"].includes(status)) {
+    return { error: "Choose a valid operator status.", success: null };
+  }
+
+  const { supabase, user } = await requireSignedInOperator();
+
+  try {
+    await authorizePlatform("platform.operators.manage", supabase, {
+      userId: user.id,
+    });
+  } catch (error) {
+    if (isAuthorizationError(error)) {
+      return { error: error.message, success: null };
+    }
+    throw error;
+  }
+
+  const { error } = await supabase.rpc("set_platform_operator_status", {
+    p_user_id: targetUserId,
+    p_status: status,
+  });
+
+  if (error) {
+    if (error.message?.includes("last active")) {
+      return {
+        error: "Cannot suspend or revoke the last active platform operator.",
+        success: null,
+      };
+    }
+    if (error.message?.includes("Not authorized")) {
+      return {
+        error: "You do not have platform operator access.",
+        success: null,
+      };
+    }
+    return {
+      error: error.message || "Could not update operator status.",
+      success: null,
+    };
+  }
+
+  revalidatePath("/platform");
+  revalidatePath("/platform/operators");
+  return {
+    error: null,
+    success: `Operator status updated to ${status}.`,
+  };
+}

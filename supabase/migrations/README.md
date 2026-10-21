@@ -37,6 +37,7 @@ That command drops local data, applies every migration in order, then runs `supa
 | `20261021120000_audit_events_foundation.sql` | ILM-PLAT-008 | Append-only audit, sanitization, `record_audit_event`, provisioning audit |
 | `20261021300000_school_onboarding_schema.sql` | Phase 2 | `schools`, `school_campuses`, memberships, applications, invitations; `audit_events.school_id` |
 | `20261021301000_school_onboarding_rls.sql` | Phase 2 | School helpers, grants, RLS, application privilege protection |
+| `20261021310000_platform_operator_bootstrap_and_status.sql` | Phase 3 | First-operator bootstrap (one-shot), status change RPC, audit |
 
 ## Scope by milestone
 

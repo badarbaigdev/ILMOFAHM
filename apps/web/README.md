@@ -111,21 +111,29 @@ Profile rows are inserted with the user session client under RLS (`src/features/
 
 Platform operators are **not** organization members. They are rows in `platform_operators` and use the same Auth sign-in.
 
-| URL                           | Who                                        |
-| ----------------------------- | ------------------------------------------ |
-| `/auth/sign-in`               | Superadmin login (same form as org users)  |
-| `/platform`                   | Superadmin dashboard (stats + recent orgs) |
-| `/platform/organizations`     | All organizations                          |
-| `/platform/organizations/new` | Create org + assign/create org admin       |
+| URL | Who |
+| --- | --- |
+| `/auth/sign-in` | Superadmin login (same form as school/org users) |
+| `/platform` | Superadmin dashboard |
+| `/platform/bootstrap` | First-operator bootstrap (disabled after any active operator) |
+| `/platform/unauthorized` | Signed-in users without active operator access |
+| `/platform/operators` | List / suspend / revoke operators (audited) |
+| `/platform/organizations` | All organizations (legacy path) |
+| `/platform/organizations/new` | Create org + assign/create org admin |
 
-After sign-in, active operators are redirected to `/platform`. Organization admins land on `/app` and cannot access `/platform` (server redirect). Operators do not automatically receive tenant academic/student access via RLS.
+After sign-in, active operators are redirected to `/platform`. Non-operators who hit `/platform/*` are sent to `/platform/unauthorized` (middleware + page guards). Public sign-up never grants platform privileges. Suspended/revoked operators fail `is_platform_operator()` and cannot call privileged RPCs.
 
-**Local bootstrap** (after signing up the operator account):
+**First-operator bootstrap** (only while no active operator exists):
+
+1. Sign up / sign in as the intended operator.
+2. Open `/platform/bootstrap` and confirm, **or** run:
 
 ```bash
 # repo root — local Supabase must be running
 ./scripts/bootstrap-platform-operator.sh your-operator@example.test
 ```
+
+Both paths call `bootstrap_first_platform_operator()` which is permanently rejected once an active operator exists.
 
 Creating an organization as Superadmin requires `SUPABASE_SECRET_KEY` in `apps/web/.env.local` (service role) so new Auth users can be created when the admin email is new.
 

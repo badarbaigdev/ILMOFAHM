@@ -2,14 +2,14 @@ import "server-only";
 
 import { redirect } from "next/navigation";
 
-import { authorizePlatform } from "@/features/platform/operator/authorize-platform";
 import { isAuthorizationError } from "@/features/platform/authorization";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { authorizePlatform } from "@/features/platform/operator/authorize-platform";
 import type { PlatformPermission } from "@/features/platform/operator/permissions";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 /**
  * Loads session + platform authorization for /platform pages.
- * Redirects org-only users to /app; unauthenticated users to sign-in.
+ * Unauthenticated → sign-in; authenticated non-operators → unauthorized.
  */
 export async function requirePlatformOperatorPage(
   permission: PlatformPermission = "platform.organizations.read",
@@ -31,7 +31,7 @@ export async function requirePlatformOperatorPage(
       if (authError.code === "unauthenticated") {
         redirect("/auth/sign-in?next=/platform");
       }
-      redirect("/app");
+      redirect("/platform/unauthorized");
     }
     throw authError;
   }

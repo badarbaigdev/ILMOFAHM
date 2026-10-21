@@ -6,7 +6,7 @@ Track progress across Cursor sessions. Do not mark unfinished work as complete.
 
 ## Current phase
 
-**Phase 2 complete.** Next: **Phase 3 — Secure platform administrator authentication** (harden/adapt existing operators for school application review).
+**Phase 3 complete.** Next: **Phase 4 — Public school registration** (wire `/register-school` to `school_applications`).
 
 ## Phase checklist
 
@@ -15,7 +15,7 @@ Track progress across Cursor sessions. Do not mark unfinished work as complete.
 | 0 Repository baseline | **Complete** | Inspected; checks documented |
 | 1 Public website (static) | **Complete** | All public routes; forms validate without claiming delivery |
 | 2 School-based schema | **Complete** | School onboarding tables + RLS; legacy org tables retained for `/app` |
-| 3 Platform admin auth | Partial (pre-existing) | `platform_operators` + `/platform` under org model |
+| 3 Platform admin auth | **Complete** | Controlled bootstrap, revocation, middleware + unauthorized page |
 | 4 Public school registration | Not started | Form UI ready; DB persistence pending |
 | 5 Application review/approval | Not started | |
 | 6 School provisioning | Not started | Org provisioning exists; school flow pending |
@@ -119,6 +119,39 @@ School onboarding foundation in versioned migrations (parallel to legacy org mod
 - No provisioning RPC yet (Phase 6); no public registration server action yet (Phase 4)
 - Application UI still talks to organization tables for the workspace
 
+## Phase 3 — What was implemented
+
+Hardened platform operator authentication:
+
+| Piece | Detail |
+| --- | --- |
+| Bootstrap | `bootstrap_first_platform_operator()` + `/platform/bootstrap` — disabled once any active operator exists |
+| Script | `scripts/bootstrap-platform-operator.sh` calls the same DB function |
+| Revocation | `set_platform_operator_status()` + `/platform/operators` (cannot remove last active) |
+| Guards | Middleware requires active operator for `/platform/*` (except bootstrap/unauthorized) |
+| Unauthorized | `/platform/unauthorized` for signed-in non-operators / revoked |
+| Audit | Bootstrap and status changes write `audit_events` |
+| Permissions | Expanded platform permission constants for upcoming application/school work |
+
+### Migrations added / applied (local)
+
+- `20261021310000_platform_operator_bootstrap_and_status.sql`
+- Applied via `supabase db reset` (local only)
+
+### Checks run (Phase 3)
+
+| Check | Result |
+| --- | --- |
+| `supabase db reset` | Pass |
+| `supabase test db` | Pass — **195** tests (14 new bootstrap/status cases) |
+| `npm run lint` / `typecheck` / `test` / `build` | Pass |
+
+### Known limitations
+
+- Operator invite-by-email UI not built (status manage only for existing rows)
+- Platform dashboard still org-centric until Phase 5 school application queue
+- Recovery of a fully locked-out operator set requires privileged DB access (by design)
+
 ## Next milestone
 
-**Phase 3:** Confirm platform operator bootstrap, session protection, revocation, and audit for school-application administration (build on existing `platform_operators`).
+**Phase 4:** Connect `/register-school` to `school_applications` with server validation, rate-limit/abuse basics, and honest success/error states.

@@ -41,5 +41,6 @@ supabase test db
 | ILM-ACA-003 | `database/academy_structure.test.sql` — courses/cohorts; school-only denied |
 | Platform operator | `database/platform_operators.test.sql` — Superadmin provision allow/deny; org admin cannot use platform RPCs |
 | Phase 2 school onboarding | `database/school_onboarding_foundation.test.sql` — anon apply, cross-school deny, operator review, invitation scope, privilege strip |
+| Phase 3 operator bootstrap | `database/platform_operator_bootstrap.test.sql` — one-shot bootstrap, deny self-promote, suspend/revoke, last-active guard, audit |
 
 Do not claim tenant isolation for later modules until matching deny tests exist for those tables too.
