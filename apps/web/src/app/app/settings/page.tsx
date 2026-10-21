@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { CampusesPanel } from "@/features/institution/campuses/campuses-panel";
+import { listOrganizationCampuses } from "@/features/institution/campuses/queries";
 import { OrganizationProfileForm } from "@/features/institution/profile/profile-form";
 import { getOrganizationProfile } from "@/features/institution/profile/queries";
 import {
@@ -88,17 +90,30 @@ export default async function SettingsPage({
     throw authError;
   }
 
-  const canUpdate = await can(
-    {
-      organizationId: context.organization.id,
-      permission: "organization.update",
-    },
-    deps,
-  );
+  const [canUpdate, canManageCampuses] = await Promise.all([
+    can(
+      {
+        organizationId: context.organization.id,
+        permission: "organization.update",
+      },
+      deps,
+    ),
+    can(
+      {
+        organizationId: context.organization.id,
+        permission: "campus.manage",
+      },
+      deps,
+    ),
+  ]);
 
   let profile;
+  let campuses;
   try {
-    profile = await getOrganizationProfile(supabase, context.organization.id);
+    [profile, campuses] = await Promise.all([
+      getOrganizationProfile(supabase, context.organization.id),
+      listOrganizationCampuses(supabase, context.organization.id),
+    ]);
   } catch {
     return (
       <main
@@ -110,7 +125,7 @@ export default async function SettingsPage({
           Settings
         </h1>
         <p role="alert" className="mt-4 text-sm text-red-700">
-          Could not load organization profile.
+          Could not load organization settings.
         </p>
       </main>
     );
@@ -151,7 +166,7 @@ export default async function SettingsPage({
         Settings
       </h1>
       <p className="mt-3 max-w-2xl text-muted">
-        Institution profile and operating mode for{" "}
+        Institution profile, operating mode, and campuses for{" "}
         <span className="font-medium text-ink">{profile.name}</span>.
       </p>
 
@@ -174,6 +189,12 @@ export default async function SettingsPage({
         timezone={profile.timezone}
         locale={profile.locale}
         canUpdate={canUpdate}
+      />
+
+      <CampusesPanel
+        organizationId={profile.id}
+        campuses={campuses}
+        canManage={canManageCampuses}
       />
     </main>
   );

@@ -40,10 +40,10 @@ function deps(
     getActiveMembership: async () => resolvedMembership,
     getCampus: async (campusId) => {
       if (campusId === CAMPUS_A) {
-        return { id: CAMPUS_A, organizationId: ORG_A };
+        return { id: CAMPUS_A, organizationId: ORG_A, status: "active" };
       }
       if (campusId === CAMPUS_B) {
-        return { id: CAMPUS_B, organizationId: ORG_B };
+        return { id: CAMPUS_B, organizationId: ORG_B, status: "active" };
       }
       return null;
     },
@@ -142,6 +142,28 @@ describe("authorize", () => {
       (error: unknown) =>
         error instanceof AuthorizationError &&
         error.code === "cross_tenant_scope",
+    );
+  });
+
+  it("rejects archived campuses for campus-scoped actions", async () => {
+    await assert.rejects(
+      () =>
+        authorize(
+          {
+            organizationId: ORG_A,
+            permission: "campus.read",
+            scope: { type: "campus", campusId: CAMPUS_A },
+          },
+          deps({
+            getCampus: async () => ({
+              id: CAMPUS_A,
+              organizationId: ORG_A,
+              status: "archived",
+            }),
+          }),
+        ),
+      (error: unknown) =>
+        error instanceof AuthorizationError && error.code === "invalid_scope",
     );
   });
 

@@ -14,6 +14,8 @@ export type TrustedMembership = {
 export type TrustedCampus = {
   id: string;
   organizationId: string;
+  /** active | archived — archived campuses fail campus-scoped authorize(). */
+  status: string;
 };
 
 /**

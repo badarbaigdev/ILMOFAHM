@@ -69,7 +69,7 @@ export function createSupabaseAuthorizationDeps(
     async getCampus(campusId) {
       const { data, error } = await supabase
         .from("campuses")
-        .select("id, organization_id")
+        .select("id, organization_id, status")
         .eq("id", campusId)
         .maybeSingle();
 
@@ -79,6 +79,7 @@ export function createSupabaseAuthorizationDeps(
       return {
         id: data.id,
         organizationId: data.organization_id,
+        status: data.status,
       };
     },
 

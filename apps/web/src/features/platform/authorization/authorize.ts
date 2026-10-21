@@ -76,6 +76,12 @@ export async function authorize(
         "Campus is not available in this organization.",
       );
     }
+    if (campus.status !== "active") {
+      throw new AuthorizationError(
+        "invalid_scope",
+        "This campus is archived and cannot be used.",
+      );
+    }
     return {
       userId,
       membership,

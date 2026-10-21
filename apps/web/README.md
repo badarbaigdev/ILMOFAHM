@@ -179,6 +179,13 @@ await authorize(
 - Trigger blocks Data API changes to `status`, `slug`, `id`, and `created_at`.
 - App helpers `supportsSchool` / `supportsAcademy` gate school-only vs academy-only UI; they are not authorization.
 
+## Campus setup (ILM-ORG-002)
+
+- Same `/app/settings` page lists campuses; owners/admins create/update name, code, contact fields, and active/archived status.
+- RPCs `create_organization_campus` / `update_organization_campus` enforce manager membership and audit changes.
+- Hard delete is revoked for authenticated clients — archive instead.
+- Campus-scoped `authorize()` requires the campus to belong to the org and be `active`.
+
 ## Brand
 
 See [`../../docs/00-brand-and-product.md`](../../docs/00-brand-and-product.md) for canonical product copy. Runtime brand strings live in `src/lib/brand.ts`.
