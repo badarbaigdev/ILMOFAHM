@@ -15,6 +15,16 @@ export const CONFIG_AUDIT_ACTIONS = [
   "campus.created",
   "campus.updated",
   "campus.branding_overrides_updated",
+  "academic_year.created",
+  "academic_year.updated",
+  "academic_term.created",
+  "grade.created",
+  "grade.archived",
+  "section.created",
+  "subject.created",
+  "course.created",
+  "course.archived",
+  "cohort.created",
 ] as const;
 
 export type ConfigAuditAction = (typeof CONFIG_AUDIT_ACTIONS)[number];
@@ -43,6 +53,26 @@ export function configAuditActionLabel(action: string): string {
       return "Campus updated";
     case "campus.branding_overrides_updated":
       return "Campus branding overrides";
+    case "academic_year.created":
+      return "Academic year created";
+    case "academic_year.updated":
+      return "Academic year updated";
+    case "academic_term.created":
+      return "Academic term created";
+    case "grade.created":
+      return "Grade created";
+    case "grade.archived":
+      return "Grade archived";
+    case "section.created":
+      return "Section created";
+    case "subject.created":
+      return "Subject created";
+    case "course.created":
+      return "Course created";
+    case "course.archived":
+      return "Course archived";
+    case "cohort.created":
+      return "Cohort created";
     default:
       return action;
   }

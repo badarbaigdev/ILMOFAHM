@@ -12,6 +12,8 @@ export const PERMISSIONS = [
   "membership.manage_status",
   "campus.read",
   "campus.manage",
+  "academic.read",
+  "academic.manage",
   "audit.read",
 ] as const;
 
@@ -26,9 +28,14 @@ const ALL_PERMISSIONS: readonly Permission[] = PERMISSIONS;
 const ROLE_PERMISSIONS: Record<OrgRole, readonly Permission[]> = {
   owner: ALL_PERMISSIONS,
   admin: ALL_PERMISSIONS,
-  staff: ["organization.read", "membership.read", "campus.read"],
-  teacher: ["organization.read", "campus.read"],
-  finance: ["organization.read", "campus.read"],
+  staff: [
+    "organization.read",
+    "membership.read",
+    "campus.read",
+    "academic.read",
+  ],
+  teacher: ["organization.read", "campus.read", "academic.read"],
+  finance: ["organization.read", "campus.read", "academic.read"],
   guardian: ["organization.read"],
 };
 

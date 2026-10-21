@@ -36,5 +36,8 @@ supabase test db
 | ILM-ORG-003 | `database/organization_locale_calendar.test.sql` — locale/working days/holidays allow/deny and validation |
 | ILM-ORG-004 | `database/organization_branding.test.sql` — branding/contact allow/deny, campus overrides, validation |
 | ILM-ORG-005 | `database/organization_config_audit.test.sql` — config audit before/after + actor_role |
+| ILM-ACA-001 | `database/academic_years_terms.test.sql` — years/terms allow/deny, term range, audit |
+| ILM-ACA-002 | `database/school_structure.test.sql` — grades/sections/subjects; academy-only denied |
+| ILM-ACA-003 | `database/academy_structure.test.sql` — courses/cohorts; school-only denied |
 
 Do not claim tenant isolation for later modules until matching deny tests exist for those tables too.

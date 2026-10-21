@@ -110,6 +110,12 @@ export default async function AppHomePage({ searchParams }: AppHomePageProps) {
 
       <p className="mt-8 flex flex-wrap gap-x-4 gap-y-2 text-sm text-muted">
         <Link
+          href={`/app/setup?organization=${context.organization.id}`}
+          className="text-ink-soft underline"
+        >
+          Academic setup
+        </Link>
+        <Link
           href={`/app/settings?organization=${context.organization.id}`}
           className="text-ink-soft underline"
         >

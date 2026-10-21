@@ -190,7 +190,33 @@ await authorize(
 
 - `/app/settings` — timezone, default language (`en`/`ur`), ISO working days, and holiday placeholders.
 - RPC `update_organization_locale_settings` uses curated timezone/locale allowlists and audits changes.
-- Table `organization_holidays` with create/delete RPCs (unique per org+date). Academic years/terms are later (ACA-001).
+- Table `organization_holidays` with create/delete RPCs (unique per org+date).
+
+## Academic years and terms (ILM-ACA-001)
+
+- Route: `/app/setup` — academic years (planned/active/archived, one current per org) and optional terms.
+- RPCs `create_academic_year` / `update_academic_year` / `create_academic_term` (manager-only, audited).
+- Term dates must fall within the parent year. Permission: `academic.read` / `academic.manage`.
+
+## School structure (ILM-ACA-002)
+
+- `/app/setup` — grades, sections, subjects when institution type is `school` or `both`.
+- RPCs refuse academy-only orgs. Soft archive via `archive_grade` (no hard delete).
+
+## Academy structure (ILM-ACA-003)
+
+- `/app/setup` — courses and cohorts/batches when institution type is `academy` or `both`.
+- Does not require school grades/sections. Capacity and date fields optional where configured.
+
+## Setup UI gating (ILM-ACA-004)
+
+- `/app/setup` shows school and/or academy panels from trusted `institution_type` (membership context).
+- Workspace home links to Academic setup. Gating is UX only — RPCs and `authorize()` enforce access.
+
+## M2 verification (ILM-ACA-005)
+
+- Exit gate: setup configurable; school fields do not block academy; edits permission-checked and audited.
+- Deferred to later milestones: teacher/instructor assignments, student enrolment (M3), timetables.
 
 ## Branding and contact (ILM-ORG-004)
 
