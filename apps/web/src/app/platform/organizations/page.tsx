@@ -2,7 +2,10 @@ import Link from "next/link";
 
 import { listPlatformOrganizations } from "@/features/platform/operator/queries";
 import { requirePlatformOperatorPage } from "@/features/platform/operator/require-operator";
-import { institutionTypeLabel, isInstitutionType } from "@/features/institution/mode";
+import {
+  institutionTypeLabel,
+  isInstitutionType,
+} from "@/features/institution/mode";
 
 export default async function PlatformOrganizationsPage() {
   const { supabase } = await requirePlatformOperatorPage(
@@ -50,8 +53,8 @@ export default async function PlatformOrganizationsPage() {
         </Link>
       </div>
       <p className="mt-3 max-w-2xl text-muted">
-        All registered institutions. Each organization has its own admin
-        (owner) and isolated tenant data.
+        All registered institutions. Each organization has its own admin (owner)
+        and isolated tenant data.
       </p>
 
       {organizations.length === 0 ? (

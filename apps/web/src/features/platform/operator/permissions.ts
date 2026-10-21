@@ -1,10 +1,16 @@
 /**
  * Platform-operator (Superadmin) permissions.
- * Distinct from organization membership permissions.
+ * Distinct from school/organization membership permissions.
+ * Active operators hold the full set for the current MVP.
  */
 export const PLATFORM_PERMISSIONS = [
   "platform.organizations.read",
   "platform.organizations.manage",
+  "platform.applications.read",
+  "platform.applications.manage",
+  "platform.schools.read",
+  "platform.operators.read",
+  "platform.operators.manage",
 ] as const;
 
 export type PlatformPermission = (typeof PLATFORM_PERMISSIONS)[number];

@@ -15,8 +15,7 @@ export type SubjectInput = {
 };
 
 export type ValidateResult<T> =
-  | { ok: true; value: T }
-  | { ok: false; error: string };
+  { ok: true; value: T } | { ok: false; error: string };
 
 export function validateGradeInput(raw: {
   name: string;

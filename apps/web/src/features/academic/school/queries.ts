@@ -59,9 +59,7 @@ export async function listSections(
 ): Promise<SectionRow[]> {
   const { data, error } = await supabase
     .from("sections")
-    .select(
-      "id, organization_id, grade_id, campus_id, name, capacity, status",
-    )
+    .select("id, organization_id, grade_id, campus_id, name, capacity, status")
     .eq("organization_id", organizationId)
     .order("name", { ascending: true });
 

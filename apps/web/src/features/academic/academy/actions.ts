@@ -117,9 +117,7 @@ export async function createCohortAction(
     return { error: "Course is required.", success: null };
   }
 
-  const academicYearRaw = String(
-    formData.get("academic_year_id") ?? "",
-  ).trim();
+  const academicYearRaw = String(formData.get("academic_year_id") ?? "").trim();
   const academicYearId =
     academicYearRaw && isUuid(academicYearRaw) ? academicYearRaw : null;
 

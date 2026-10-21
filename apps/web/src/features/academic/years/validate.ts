@@ -16,8 +16,7 @@ export type AcademicTermInput = {
 };
 
 export type ValidateResult<T> =
-  | { ok: true; value: T }
-  | { ok: false; error: string };
+  { ok: true; value: T } | { ok: false; error: string };
 
 const STATUSES: readonly AcademicYearStatus[] = [
   "planned",
@@ -54,7 +53,10 @@ export function validateAcademicYearInput(raw: {
   const start = parseDate(startsOn);
   const end = parseDate(endsOn);
   if (!start || !end) {
-    return { ok: false, error: "Enter valid start and end dates (YYYY-MM-DD)." };
+    return {
+      ok: false,
+      error: "Enter valid start and end dates (YYYY-MM-DD).",
+    };
   }
   if (end < start) {
     return { ok: false, error: "End date must be on or after the start date." };
@@ -96,7 +98,10 @@ export function validateAcademicTermInput(raw: {
   const start = parseDate(startsOn);
   const end = parseDate(endsOn);
   if (!start || !end) {
-    return { ok: false, error: "Enter valid start and end dates (YYYY-MM-DD)." };
+    return {
+      ok: false,
+      error: "Enter valid start and end dates (YYYY-MM-DD).",
+    };
   }
   if (end < start) {
     return { ok: false, error: "End date must be on or after the start date." };

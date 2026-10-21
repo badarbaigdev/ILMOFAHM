@@ -76,7 +76,9 @@ export function SchoolPanel({
                 <p className="font-medium text-ink">
                   {grade.name}
                   {grade.code ? (
-                    <span className="ml-2 text-sm text-muted">({grade.code})</span>
+                    <span className="ml-2 text-sm text-muted">
+                      ({grade.code})
+                    </span>
                   ) : null}
                   {grade.status === "archived" ? (
                     <span className="ml-2 text-xs text-muted uppercase">
@@ -109,9 +111,16 @@ export function SchoolPanel({
             <h3 className="text-sm font-semibold tracking-wide text-ink uppercase">
               Add grade
             </h3>
-            <input type="hidden" name="organization_id" value={organizationId} />
+            <input
+              type="hidden"
+              name="organization_id"
+              value={organizationId}
+            />
             <div className="space-y-1.5">
-              <label htmlFor="grade-name" className="block text-sm font-medium text-ink">
+              <label
+                htmlFor="grade-name"
+                className="block text-sm font-medium text-ink"
+              >
                 Name
               </label>
               <input
@@ -123,7 +132,10 @@ export function SchoolPanel({
               />
             </div>
             <div className="space-y-1.5">
-              <label htmlFor="grade-code" className="block text-sm font-medium text-ink">
+              <label
+                htmlFor="grade-code"
+                className="block text-sm font-medium text-ink"
+              >
                 Code (optional)
               </label>
               <input
@@ -169,11 +181,19 @@ export function SchoolPanel({
             </button>
           </form>
 
-          <form action={sectionAction} className="max-w-md space-y-3" noValidate>
+          <form
+            action={sectionAction}
+            className="max-w-md space-y-3"
+            noValidate
+          >
             <h3 className="text-sm font-semibold tracking-wide text-ink uppercase">
               Add section
             </h3>
-            <input type="hidden" name="organization_id" value={organizationId} />
+            <input
+              type="hidden"
+              name="organization_id"
+              value={organizationId}
+            />
             <div className="space-y-1.5">
               <label
                 htmlFor="section-grade"
@@ -274,7 +294,11 @@ export function SchoolPanel({
             className="mt-4 max-w-md space-y-3"
             noValidate
           >
-            <input type="hidden" name="organization_id" value={organizationId} />
+            <input
+              type="hidden"
+              name="organization_id"
+              value={organizationId}
+            />
             <div className="space-y-1.5">
               <label
                 htmlFor="subject-name"

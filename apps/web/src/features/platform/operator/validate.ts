@@ -15,8 +15,7 @@ export type PlatformCreateOrganizationInput = {
 };
 
 export type ValidateResult<T> =
-  | { ok: true; value: T }
-  | { ok: false; error: string };
+  { ok: true; value: T } | { ok: false; error: string };
 
 export function validatePlatformCreateOrganizationInput(raw: {
   name: string;
@@ -92,9 +91,7 @@ export function validatePlatformCreateOrganizationInput(raw: {
     value: {
       name,
       institutionType: raw.institutionType.trim() as
-        | "school"
-        | "academy"
-        | "both",
+        "school" | "academy" | "both",
       slug,
       campusName,
       adminEmail,
