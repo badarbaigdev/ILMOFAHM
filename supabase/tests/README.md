@@ -43,5 +43,6 @@ supabase test db
 | Phase 2 school onboarding | `database/school_onboarding_foundation.test.sql` — anon apply, cross-school deny, operator review, invitation scope, privilege strip |
 | Phase 3 operator bootstrap | `database/platform_operator_bootstrap.test.sql` — one-shot bootstrap, deny self-promote, suspend/revoke, last-active guard, audit |
 | Phase 4 school applications | `database/school_application_submit.test.sql` — anon pending insert, privilege strip, duplicate deny, sanitized audit |
+| Phase 5 application review | `database/school_application_review.test.sql` — transition rules, review/approve RPCs, authz deny, idempotent provision, audit |
 
 Do not claim tenant isolation for later modules until matching deny tests exist for those tables too.

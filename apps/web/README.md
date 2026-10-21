@@ -99,6 +99,7 @@ Cookie session via `@supabase/ssr`. Middleware refreshes the session and guards 
 | `/auth/callback`          | PKCE code exchange; then redirects to a safe `next` path  |
 | `/app`                    | Organization workspace (owner/admin and staff)            |
 | `/platform`               | Platform operator (Superadmin) console                    |
+| `/platform/requests`      | School application review / approval                      |
 | `/platform/organizations` | List/create tenants and assign org admins                 |
 
 Local redirects are already allow-listed in `supabase/config.toml` (`site_url` + `additional_redirect_urls`). Hosted Auth URL config: [`../../docs/09-vercel-preview-runbook.md`](../../docs/09-vercel-preview-runbook.md).
@@ -115,6 +116,7 @@ Platform operators are **not** organization members. They are rows in `platform_
 | --- | --- |
 | `/auth/sign-in` | Superadmin login (same form as school/org users) |
 | `/platform` | Superadmin dashboard |
+| `/platform/requests` | School application queue / approve (controlled RPCs) |
 | `/platform/bootstrap` | First-operator bootstrap (disabled after any active operator) |
 | `/platform/unauthorized` | Signed-in users without active operator access |
 | `/platform/operators` | List / suspend / revoke operators (audited) |

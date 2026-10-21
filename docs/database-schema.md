@@ -1,6 +1,6 @@
 # ILMOFAHM — Database Schema
 
-**Status:** Phase 2 school onboarding foundation added  
+**Status:** Phase 5 application review RPCs added  
 **Last updated:** 2026-10-21  
 **Source of truth:** `supabase/migrations/*.sql`
 
@@ -51,20 +51,24 @@ supabase test db                    # RLS / constraint allow-deny suite
 - RLS + least-privilege grants on all school tables; `FORCE ROW LEVEL SECURITY`.
 - Anon may **INSERT** pending `school_applications` only; no SELECT.
 - Trigger strips privileged application columns for non-operators on INSERT.
+- Authenticated **UPDATE** on `school_applications` revoked — operators mutate via RPCs only.
 - Unique open-application guard on `(applicant_email, lower(school_name))`.
-- `provisioned_school_id` unique → at most one school per application when provisioning lands.
+- `provisioned_school_id` unique → at most one school per application.
 - `school_id` reassignment blocked on campuses, memberships, invitations.
 - Helpers: `is_active_school_member(school_id)`, `is_school_manager(school_id)`.
+- Review RPCs: `review_school_application`, `approve_school_application` (idempotent provision + invitation).
 
 ## Legacy organization schema
 
 Still present from earlier milestones (profile, branding, academic structure, org invites, org provisioning RPCs). Frozen for current `/app` behavior. Not required for the new school registration journey.
 
-## Migration inventory (Phase 2 additions)
+## Migration inventory (school onboarding)
 
 | File | Contents |
 | --- | --- |
 | `20261021300000_school_onboarding_schema.sql` | School tables + `audit_events.school_id` |
 | `20261021301000_school_onboarding_rls.sql` | Helpers, grants, RLS, application privilege protection |
+| `20261021320000_school_application_submit_audit.sql` | Submit audit trigger |
+| `20261021330000_school_application_review.sql` | Transition helper + review/approve RPCs |
 
-Tests: `supabase/tests/database/school_onboarding_foundation.test.sql`
+Tests: `school_onboarding_foundation`, `school_application_submit`, `school_application_review`

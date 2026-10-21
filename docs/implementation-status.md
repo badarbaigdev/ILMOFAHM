@@ -6,7 +6,7 @@ Track progress across Cursor sessions. Do not mark unfinished work as complete.
 
 ## Current phase
 
-**Phase 4 complete.** Next: **Phase 5 — Platform application review and approval**.
+**Phase 5 complete.** Next: **Phase 6 — School provisioning** (core path already runs inside approval; expand retry/ops UI as needed).
 
 ## Phase checklist
 
@@ -17,9 +17,9 @@ Track progress across Cursor sessions. Do not mark unfinished work as complete.
 | 2 School-based schema | **Complete** | School onboarding tables + RLS; legacy org tables retained for `/app` |
 | 3 Platform admin auth | **Complete** | Controlled bootstrap, revocation, middleware + unauthorized page |
 | 4 Public school registration | **Complete** | `/register-school` → pending `school_applications` |
-| 5 Application review/approval | Not started | |
-| 6 School provisioning | Not started | Org provisioning exists; school flow pending |
-| 7 Owner invitation/activation | Partial (org invites) | Adapt for school model later |
+| 5 Application review/approval | **Complete** | `/platform/requests`; review + approve RPCs; audit |
+| 6 School provisioning | Partial | Done inside `approve_school_application` (idempotent); Phase 6 can harden ops |
+| 7 Owner invitation/activation | Partial | Invitation row + one-time token on approve; accept/activate UI pending |
 | 8 School setup + login | Not started | `/app/setup` is org-based |
 | 9 Manual subscriptions | Not started | Pricing config file ready for later DB plans |
 | 10 School roles | Not started | |
@@ -180,8 +180,38 @@ Public school registration persists pending applications:
 
 - Rate limit is single-process (fine for one Next instance; not distributed)
 - Demo/contact forms still demo-stage only
-- No operator review UI yet (Phase 5)
+
+
+## Phase 5 — What was implemented
+
+Platform operators review and approve school applications through controlled RPCs:
+
+| Piece | Detail |
+| --- | --- |
+| Routes | `/platform/requests` (filterable list), `/platform/requests/[id]` (detail + actions) |
+| Review RPC | `review_school_application` — validated transitions; rejection / info-request require messages |
+| Approve RPC | `approve_school_application` — provisions school + default campus + owner invitation; idempotent |
+| Authz | Direct `UPDATE` on `school_applications` revoked; non-operators denied on RPCs |
+| Audit | `school.application.reviewed`, `school.application.approved`, `school.provisioned` |
+| UI | Status filters, review form, confirm-before-approve, one-time invitation token display |
+
+### Migrations added / applied (local)
+
+- `20261021330000_school_application_review.sql`
+
+### Checks run (Phase 5)
+
+| Check | Result |
+| --- | --- |
+| `supabase db reset` + `supabase test db` | Pass — **217** tests |
+| lint / typecheck / unit / build | Pass — **111** unit tests; `/platform/requests` routes in build |
+
+### Known limitations
+
+- Owner invitation email / accept flow not built (Phase 7)
+- Invitation token shown once in operator UI until email delivery exists
+- School setup / portal login still org-centric (Phase 8)
 
 ## Next milestone
 
-**Phase 5:** Platform application queue (`/platform/requests`), status transitions, review notes, rejection / information-requested, and audit — then trigger controlled provisioning on approval.
+**Phase 6:** Harden school provisioning ops if needed beyond approve RPC — then **Phase 7** owner invitation activation.

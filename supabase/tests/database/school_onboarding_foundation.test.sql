@@ -237,15 +237,15 @@ select is_empty(
   'outsider cannot read school applications'
 );
 
-select results_eq(
+select throws_ok(
   $$
     update public.school_applications
     set status = 'approved'
     where id = '55555555-5555-5555-5555-555555555555'
-    returning id
   $$,
-  $$ select id from public.school_applications where false $$,
-  'outsider cannot approve school applications'
+  '42501',
+  null,
+  'outsider cannot update school applications (no update grant)'
 );
 
 select throws_ok(
@@ -354,14 +354,13 @@ select isnt_empty(
 
 select lives_ok(
   $$
-    update public.school_applications
-    set status = 'under_review',
-        review_notes = 'Checking documents',
-        reviewer_user_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-        reviewed_at = now()
-    where id = '55555555-5555-5555-5555-555555555555'
+    select public.review_school_application(
+      '55555555-5555-5555-5555-555555555555',
+      'under_review',
+      'Checking documents'
+    )
   $$,
-  'operator can update application review fields'
+  'operator can update application review fields via review RPC'
 );
 
 select results_eq(

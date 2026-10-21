@@ -5,6 +5,7 @@ import {
   listPlatformOrganizations,
 } from "@/features/platform/operator/queries";
 import { requirePlatformOperatorPage } from "@/features/platform/operator/require-operator";
+import { countPendingSchoolApplications } from "@/features/school-applications/queries";
 
 export default async function PlatformDashboardPage() {
   const { supabase } = await requirePlatformOperatorPage(
@@ -13,10 +14,12 @@ export default async function PlatformDashboardPage() {
 
   let stats;
   let recent;
+  let openRequests = 0;
   try {
-    [stats, recent] = await Promise.all([
+    [stats, recent, openRequests] = await Promise.all([
       getPlatformDashboardStats(supabase),
       listPlatformOrganizations(supabase),
+      countPendingSchoolApplications(supabase).catch(() => 0),
     ]);
   } catch {
     return (
@@ -61,7 +64,15 @@ export default async function PlatformDashboardPage() {
         >
           Overview
         </h2>
-        <dl className="mt-4 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <dl className="mt-4 grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
+          <div>
+            <dt className="text-xs tracking-wide text-muted uppercase">
+              Open requests
+            </dt>
+            <dd className="mt-1 font-display text-3xl text-ink">
+              {openRequests}
+            </dd>
+          </div>
           <div>
             <dt className="text-xs tracking-wide text-muted uppercase">
               Organizations
@@ -99,6 +110,12 @@ export default async function PlatformDashboardPage() {
 
       <p className="mt-10 flex flex-wrap gap-x-4 gap-y-2 text-sm">
         <Link
+          href="/platform/requests"
+          className="font-medium text-teal underline-offset-2 hover:underline"
+        >
+          Review school requests
+        </Link>
+        <Link
           href="/platform/organizations"
           className="font-medium text-ink underline-offset-2 hover:underline"
         >
@@ -106,7 +123,7 @@ export default async function PlatformDashboardPage() {
         </Link>
         <Link
           href="/platform/organizations/new"
-          className="font-medium text-teal underline-offset-2 hover:underline"
+          className="font-medium text-ink underline-offset-2 hover:underline"
         >
           Create organization
         </Link>

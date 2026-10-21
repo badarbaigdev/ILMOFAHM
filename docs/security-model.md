@@ -26,7 +26,8 @@
 | Surface | Protection |
 | --- | --- |
 | Marketing pages | Public; no secrets; forms must not fake delivery |
-| Public registration | DB: anon INSERT pending apps only (trigger strips privileged columns); no anon SELECT; Phase 4 adds server action validation |
+| Public registration | DB: anon INSERT pending apps only (trigger strips privileged columns); no anon SELECT; server action validation + rate limit |
+| Application review | Operators use `review_school_application` / `approve_school_application` only; direct UPDATE grant revoked; non-operators get 42501 |
 | `/platform/*` | Middleware session + active `platform_operators` check; page/`authorizePlatform` gates; RLS/RPCs. Bootstrap only while zero active operators. Unauthorized → `/platform/unauthorized` |
 | `/app/*` (current) | Middleware session + membership authorization + RLS |
 | Privileged RPCs / service client | Server-only; narrow use (e.g. controlled provisioning) |

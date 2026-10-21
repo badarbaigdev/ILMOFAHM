@@ -10,6 +10,11 @@ const PLATFORM_LINKS = [
     match: (path: string) => path === "/platform",
   },
   {
+    href: "/platform/requests",
+    label: "Requests",
+    match: (path: string) => path.startsWith("/platform/requests"),
+  },
+  {
     href: "/platform/organizations",
     label: "Organizations",
     match: (path: string) => path.startsWith("/platform/organizations"),
