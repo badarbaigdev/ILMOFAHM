@@ -192,6 +192,13 @@ await authorize(
 - RPC `update_organization_locale_settings` uses curated timezone/locale allowlists and audits changes.
 - Table `organization_holidays` with create/delete RPCs (unique per org+date). Academic years/terms are later (ACA-001).
 
+## Branding and contact (ILM-ORG-004)
+
+- `/app/settings` — org contact (email/phone/website), brand display name, `#RRGGBB` color, https logo URL.
+- Campus branding overrides (null = inherit org). Receipt/report templates are intentionally out of scope.
+- RPCs `update_organization_branding` / `update_campus_branding_overrides` (manager-only, audited).
+- `resolveEffectiveBranding()` merges campus overrides for display.
+
 ## Brand
 
 See [`../../docs/00-brand-and-product.md`](../../docs/00-brand-and-product.md) for canonical product copy. Runtime brand strings live in `src/lib/brand.ts`.

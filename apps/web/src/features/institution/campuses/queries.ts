@@ -11,6 +11,9 @@ export type CampusRow = {
   email: string | null;
   addressLine: string | null;
   status: string;
+  brandDisplayName: string | null;
+  brandPrimaryColor: string | null;
+  brandLogoUrl: string | null;
 };
 
 /**
@@ -24,7 +27,7 @@ export async function listOrganizationCampuses(
   const { data, error } = await supabase
     .from("campuses")
     .select(
-      "id, organization_id, name, code, phone, email, address_line, status",
+      "id, organization_id, name, code, phone, email, address_line, status, brand_display_name, brand_primary_color, brand_logo_url",
     )
     .eq("organization_id", organizationId)
     .order("name", { ascending: true });
@@ -42,5 +45,8 @@ export async function listOrganizationCampuses(
     email: row.email,
     addressLine: row.address_line,
     status: row.status,
+    brandDisplayName: row.brand_display_name,
+    brandPrimaryColor: row.brand_primary_color,
+    brandLogoUrl: row.brand_logo_url,
   }));
 }

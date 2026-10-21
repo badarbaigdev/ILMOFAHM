@@ -16,6 +16,12 @@ export type OrganizationProfile = {
   timezone: string;
   locale: string;
   workingDays: number[];
+  contactEmail: string | null;
+  contactPhone: string | null;
+  websiteUrl: string | null;
+  brandDisplayName: string | null;
+  brandPrimaryColor: string | null;
+  brandLogoUrl: string | null;
 };
 
 /**
@@ -28,7 +34,7 @@ export async function getOrganizationProfile(
   const { data, error } = await supabase
     .from("organizations")
     .select(
-      "id, name, slug, institution_type, status, timezone, locale, working_days",
+      "id, name, slug, institution_type, status, timezone, locale, working_days, contact_email, contact_phone, website_url, brand_display_name, brand_primary_color, brand_logo_url",
     )
     .eq("id", organizationId)
     .maybeSingle();
@@ -56,5 +62,11 @@ export async function getOrganizationProfile(
     timezone: data.timezone,
     locale: data.locale,
     workingDays,
+    contactEmail: data.contact_email,
+    contactPhone: data.contact_phone,
+    websiteUrl: data.website_url,
+    brandDisplayName: data.brand_display_name,
+    brandPrimaryColor: data.brand_primary_color,
+    brandLogoUrl: data.brand_logo_url,
   };
 }

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { BrandingPanel } from "@/features/institution/branding/branding-panel";
 import { CalendarPanel } from "@/features/institution/calendar/calendar-panel";
 import { listOrganizationHolidays } from "@/features/institution/calendar/queries";
 import { CampusesPanel } from "@/features/institution/campuses/campuses-panel";
@@ -170,7 +171,7 @@ export default async function SettingsPage({
         Settings
       </h1>
       <p className="mt-3 max-w-2xl text-muted">
-        Institution profile, locale, calendar, and campuses for{" "}
+        Institution profile, branding, locale, calendar, and campuses for{" "}
         <span className="font-medium text-ink">{profile.name}</span>.
       </p>
 
@@ -191,6 +192,20 @@ export default async function SettingsPage({
         institutionType={profile.institutionType}
         status={profile.status}
         canUpdate={canUpdate}
+      />
+
+      <BrandingPanel
+        organizationId={profile.id}
+        organizationName={profile.name}
+        contactEmail={profile.contactEmail}
+        contactPhone={profile.contactPhone}
+        websiteUrl={profile.websiteUrl}
+        brandDisplayName={profile.brandDisplayName}
+        brandPrimaryColor={profile.brandPrimaryColor}
+        brandLogoUrl={profile.brandLogoUrl}
+        campuses={campuses}
+        canUpdateOrganization={canUpdate}
+        canManageCampuses={canManageCampuses}
       />
 
       <CalendarPanel
