@@ -28,9 +28,7 @@ export async function listAcademicYears(
 ): Promise<AcademicYearRow[]> {
   const { data, error } = await supabase
     .from("academic_years")
-    .select(
-      "id, organization_id, name, starts_on, ends_on, status, is_current",
-    )
+    .select("id, organization_id, name, starts_on, ends_on, status, is_current")
     .eq("organization_id", organizationId)
     .order("starts_on", { ascending: false });
 

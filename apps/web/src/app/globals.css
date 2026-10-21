@@ -9,10 +9,17 @@
   --paper-elevated: #ffffff;
   --muted: #5b6b7c;
   --line: #d7e0ea;
-  --font-display:
-    "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia,
-    serif;
-  --font-body: "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  /* Overridden by next/font variables on <html> when available */
+  --font-display: "Source Serif 4", "Iowan Old Style", Georgia, serif;
+  --font-body: "Source Sans 3", "Segoe UI", "Helvetica Neue", sans-serif;
+}
+
+.marketing-grid {
+  background-image:
+    linear-gradient(rgba(11, 31, 51, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(11, 31, 51, 0.045) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.55), transparent 75%);
 }
 
 @theme inline {

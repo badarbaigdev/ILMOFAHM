@@ -79,7 +79,9 @@ export default async function PlatformDashboardPage() {
             </dd>
           </div>
           <div>
-            <dt className="text-xs tracking-wide text-muted uppercase">Trial</dt>
+            <dt className="text-xs tracking-wide text-muted uppercase">
+              Trial
+            </dt>
             <dd className="mt-1 font-display text-3xl text-ink">
               {stats.trialOrganizationCount}
             </dd>

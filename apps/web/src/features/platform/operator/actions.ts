@@ -7,9 +7,7 @@ import { redirect } from "next/navigation";
 
 import { authorizePlatform } from "@/features/platform/operator/authorize-platform";
 import { validatePlatformCreateOrganizationInput } from "@/features/platform/operator/validate";
-import {
-  isAuthorizationError,
-} from "@/features/platform/authorization";
+import { isAuthorizationError } from "@/features/platform/authorization";
 import { createServiceSupabaseClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
@@ -110,10 +108,12 @@ async function resolveOrCreateOwnerUser(input: {
   if (created.error || !created.data.user) {
     const raced = await findUserIdByEmail(input.email);
     if (raced) {
-      await admin.from("profiles").upsert(
-        { id: raced, full_name: input.fullName || null },
-        { onConflict: "id" },
-      );
+      await admin
+        .from("profiles")
+        .upsert(
+          { id: raced, full_name: input.fullName || null },
+          { onConflict: "id" },
+        );
       return { ok: true, userId: raced, created: false, password: null };
     }
     return {

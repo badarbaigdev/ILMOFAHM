@@ -19,13 +19,11 @@ export function safeAuthNextPath(
     return fallback;
   }
   // Allow workspace and platform operator console paths only.
-  if (
-    !(
-      candidate === "/" ||
-      candidate.startsWith("/app") ||
-      candidate.startsWith("/platform")
-    )
-  ) {
+  if (!(
+    candidate === "/" ||
+    candidate.startsWith("/app") ||
+    candidate.startsWith("/platform")
+  )) {
     return fallback;
   }
   return candidate;

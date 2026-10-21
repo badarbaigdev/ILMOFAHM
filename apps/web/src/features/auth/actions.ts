@@ -74,10 +74,7 @@ export async function signInAction(
     : fallback;
 
   // Default workspace home: operators land on the platform console.
-  if (
-    isOperator &&
-    (next === "/app" || next === "/app/" || !requestedNext)
-  ) {
+  if (isOperator && (next === "/app" || next === "/app/" || !requestedNext)) {
     redirect("/platform");
   }
 

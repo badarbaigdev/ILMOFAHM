@@ -7,10 +7,7 @@ import {
   createCohortAction,
   createCourseAction,
 } from "@/features/academic/academy/actions";
-import type {
-  CohortRow,
-  CourseRow,
-} from "@/features/academic/academy/queries";
+import type { CohortRow, CourseRow } from "@/features/academic/academy/queries";
 import type { AcademicYearRow } from "@/features/academic/years/queries";
 
 const initialState: AcademyActionState = { error: null, success: null };
@@ -67,7 +64,9 @@ export function AcademyPanel({
               <p className="font-medium text-ink">
                 {course.name}
                 {course.code ? (
-                  <span className="ml-2 text-sm text-muted">({course.code})</span>
+                  <span className="ml-2 text-sm text-muted">
+                    ({course.code})
+                  </span>
                 ) : null}
                 {course.status === "archived" ? (
                   <span className="ml-2 text-xs text-muted uppercase">
@@ -106,7 +105,11 @@ export function AcademyPanel({
             <h3 className="text-sm font-semibold tracking-wide text-ink uppercase">
               Add course
             </h3>
-            <input type="hidden" name="organization_id" value={organizationId} />
+            <input
+              type="hidden"
+              name="organization_id"
+              value={organizationId}
+            />
             <div className="space-y-1.5">
               <label
                 htmlFor="course-name"
@@ -173,7 +176,11 @@ export function AcademyPanel({
             <h3 className="text-sm font-semibold tracking-wide text-ink uppercase">
               Add cohort / batch
             </h3>
-            <input type="hidden" name="organization_id" value={organizationId} />
+            <input
+              type="hidden"
+              name="organization_id"
+              value={organizationId}
+            />
             <div className="space-y-1.5">
               <label
                 htmlFor="cohort-course"

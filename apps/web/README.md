@@ -81,24 +81,25 @@ Build uses public placeholder env vars only. CI does **not** apply Supabase migr
 
 ## App shell and health
 
-- Public shell: `src/components/shell/AppShell.tsx` (skip link, brand header, account links, placeholder module nav, footer).
-- Landing: `/` — brand page plus foundation status (no fake school data).
+- Marketing shell: `src/components/marketing/*` for public routes under `src/app/(marketing)/` (`/`, `/features`, `/pricing`, `/demo`, `/register-school`, `/contact`, `/privacy`, `/terms`). Static content; forms validate only until backends land.
+- Authenticated shell: `src/components/shell/AppShell.tsx` for `/app`, `/platform`, and `/auth`.
 - Health: `GET /api/health` → `{ status, service, timestamp }` only (no secrets, no DB probe).
+- Delivery status: [`../../docs/implementation-status.md`](../../docs/implementation-status.md).
 
 ## Auth SSR (ILM-PLAT-004)
 
 Cookie session via `@supabase/ssr`. Middleware refreshes the session and guards `/app/*`. Protected pages also call `getUser()` (never trust client-only session state).
 
-| Route                   | Purpose                                                  |
-| ----------------------- | -------------------------------------------------------- |
-| `/auth/sign-in`         | Email/password sign-in (shared; Superadmin and org admin) |
-| `/auth/sign-up`         | Account + `profiles` bootstrap (no org yet)              |
-| `/auth/forgot-password` | Password reset email (Mailpit locally)                   |
-| `/auth/update-password` | Set new password after recovery callback                 |
-| `/auth/callback`        | PKCE code exchange; then redirects to a safe `next` path |
-| `/app`                  | Organization workspace (owner/admin and staff)           |
-| `/platform`             | Platform operator (Superadmin) console                   |
-| `/platform/organizations` | List/create tenants and assign org admins              |
+| Route                     | Purpose                                                   |
+| ------------------------- | --------------------------------------------------------- |
+| `/auth/sign-in`           | Email/password sign-in (shared; Superadmin and org admin) |
+| `/auth/sign-up`           | Account + `profiles` bootstrap (no org yet)               |
+| `/auth/forgot-password`   | Password reset email (Mailpit locally)                    |
+| `/auth/update-password`   | Set new password after recovery callback                  |
+| `/auth/callback`          | PKCE code exchange; then redirects to a safe `next` path  |
+| `/app`                    | Organization workspace (owner/admin and staff)            |
+| `/platform`               | Platform operator (Superadmin) console                    |
+| `/platform/organizations` | List/create tenants and assign org admins                 |
 
 Local redirects are already allow-listed in `supabase/config.toml` (`site_url` + `additional_redirect_urls`). Hosted Auth URL config: [`../../docs/09-vercel-preview-runbook.md`](../../docs/09-vercel-preview-runbook.md).
 
@@ -110,12 +111,12 @@ Profile rows are inserted with the user session client under RLS (`src/features/
 
 Platform operators are **not** organization members. They are rows in `platform_operators` and use the same Auth sign-in.
 
-| URL | Who |
-| --- | --- |
-| `/auth/sign-in` | Superadmin login (same form as org users) |
-| `/platform` | Superadmin dashboard (stats + recent orgs) |
-| `/platform/organizations` | All organizations |
-| `/platform/organizations/new` | Create org + assign/create org admin |
+| URL                           | Who                                        |
+| ----------------------------- | ------------------------------------------ |
+| `/auth/sign-in`               | Superadmin login (same form as org users)  |
+| `/platform`                   | Superadmin dashboard (stats + recent orgs) |
+| `/platform/organizations`     | All organizations                          |
+| `/platform/organizations/new` | Create org + assign/create org admin       |
 
 After sign-in, active operators are redirected to `/platform`. Organization admins land on `/app` and cannot access `/platform` (server redirect). Operators do not automatically receive tenant academic/student access via RLS.
 

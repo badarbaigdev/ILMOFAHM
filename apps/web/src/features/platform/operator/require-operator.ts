@@ -3,9 +3,7 @@ import "server-only";
 import { redirect } from "next/navigation";
 
 import { authorizePlatform } from "@/features/platform/operator/authorize-platform";
-import {
-  isAuthorizationError,
-} from "@/features/platform/authorization";
+import { isAuthorizationError } from "@/features/platform/authorization";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { PlatformPermission } from "@/features/platform/operator/permissions";
 

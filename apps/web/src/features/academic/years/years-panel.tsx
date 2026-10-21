@@ -39,7 +39,10 @@ function CreateYearForm({ organizationId }: { organizationId: string }) {
       <form action={formAction} className="mt-4 max-w-md space-y-3" noValidate>
         <input type="hidden" name="organization_id" value={organizationId} />
         <div className="space-y-1.5">
-          <label htmlFor="new-year-name" className="block text-sm font-medium text-ink">
+          <label
+            htmlFor="new-year-name"
+            className="block text-sm font-medium text-ink"
+          >
             Name
           </label>
           <input
@@ -102,7 +105,11 @@ function CreateYearForm({ organizationId }: { organizationId: string }) {
           </select>
         </div>
         <label className="flex items-center gap-2 text-sm text-ink">
-          <input type="checkbox" name="make_current" className="rounded border-line" />
+          <input
+            type="checkbox"
+            name="make_current"
+            className="rounded border-line"
+          />
           Set as current year
         </label>
         {state.error ? (
@@ -291,7 +298,11 @@ function YearCard({
             noValidate
           >
             <input type="hidden" name="academic_year_id" value={year.id} />
-            <input type="hidden" name="organization_id" value={organizationId} />
+            <input
+              type="hidden"
+              name="organization_id"
+              value={organizationId}
+            />
             <div className="space-y-1.5 sm:col-span-2">
               <label
                 htmlFor={`term-name-${year.id}`}

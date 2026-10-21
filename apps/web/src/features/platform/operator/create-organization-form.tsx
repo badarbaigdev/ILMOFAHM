@@ -22,7 +22,10 @@ export function CreateOrganizationForm() {
   return (
     <form action={formAction} className="mt-8 max-w-lg space-y-4" noValidate>
       <div className="space-y-1.5">
-        <label htmlFor="org-name" className="block text-sm font-medium text-ink">
+        <label
+          htmlFor="org-name"
+          className="block text-sm font-medium text-ink"
+        >
           Organization name
         </label>
         <input
@@ -54,7 +57,10 @@ export function CreateOrganizationForm() {
       </div>
 
       <div className="space-y-1.5">
-        <label htmlFor="org-slug" className="block text-sm font-medium text-ink">
+        <label
+          htmlFor="org-slug"
+          className="block text-sm font-medium text-ink"
+        >
           Slug (optional)
         </label>
         <input
