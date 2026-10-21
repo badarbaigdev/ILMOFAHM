@@ -1,6 +1,6 @@
 # ILMOFAHM — Database Schema
 
-**Status:** Phase 0 baseline + Phase 2 target  
+**Status:** Phase 2 school onboarding foundation added  
 **Last updated:** 2026-10-21  
 **Source of truth:** `supabase/migrations/*.sql`
 
@@ -8,8 +8,8 @@
 
 1. **Migrations are authoritative.** Initialize any environment with `supabase db reset` (local) or ordered migration apply (hosted). Never treat dashboard-only edits as durable schema.
 2. **Local development is disposable.** `./scripts/supabase-local.sh reset` (or `supabase db reset`) destroys local data and re-applies migrations + `seed.sql`. Safe for local Docker only.
-3. **Do not reset production or shared remote DBs** without explicit confirmation that the target is a disposable development project. Willingness to abandon *old organization data* is not permission to wipe an unrelated production project.
-4. **Fresh schema path (Phase 2):** Introduce school-based tables through new versioned migrations. Prefer a clean development Supabase project when the existing org-based history would confuse the new model. Document which migrations apply to which environment.
+3. **Do not reset production or shared remote DBs** without explicit confirmation that the target is a disposable development project.
+4. **School onboarding path (Phase 2+)** uses the school-based tables below. It does **not** require `organizations` / `organization_memberships` for new registration → login work.
 5. **Fixtures only.** `seed.sql` and tests use synthetic data — never real student/guardian records.
 
 ### Reproduce a clean local database
@@ -20,50 +20,51 @@ docker version && supabase --version
 ./scripts/supabase-local.sh start   # or: supabase start
 ./scripts/supabase-local.sh reset   # or: supabase db reset
 supabase status -o env              # copy URL + keys into apps/web/.env.local
+supabase test db                    # RLS / constraint allow-deny suite
 ```
 
-## Current schema (organization-based)
+## Dual-model note (intentional, temporary)
 
-Applied migrations today define:
+| Model | Tables | Used by |
+| --- | --- | --- |
+| **School (target)** | `schools`, `school_campuses`, `school_memberships`, `school_applications`, `school_invitations` | Phases 4–8 onboarding |
+| **Organization (legacy)** | `organizations`, `campuses`, `organization_memberships`, … | Existing `/app` workspace until cutover |
+| **Shared** | `profiles`, `platform_operators`, `audit_events` | Both |
 
-| Area | Objects |
-| --- | --- |
-| Tenant root | `organizations`, `campuses`, `profiles`, `organization_memberships` |
-| Invites | membership invitation tables/flows |
-| Audit | `audit_events` foundation |
-| Institution | profile, locale/calendar, branding, campuses, config audit catalog |
-| Academic | academic years/terms, school structure, academy structure |
-| Platform | `platform_operators` |
+`public.campuses` remains organization-scoped. School locations are `school_campuses` until a dedicated cutover renames/replaces the legacy campus table. Do not mix FKs across models.
 
-RLS and grants are enabled on tenant-owned tables with allow/deny SQL tests under `supabase/tests/database/`.
-
-This model powered early platform/operator and institution workspace work. It is **not** the long-term school-onboarding vocabulary.
-
-## Target schema (school-based onboarding — Phase 2+)
-
-Implement only what onboarding needs first. Expand when modules start.
+## School onboarding tables (Phase 2)
 
 | Table | Purpose |
 | --- | --- |
-| `schools` | School tenant root |
-| `campuses` | Locations belonging to a school |
-| `profiles` | App profile linked to Auth user (no passwords) |
-| `school_memberships` | User ↔ school role and status |
-| `school_applications` | Public registration requests |
-| `school_invitations` | Owner/staff invites (token hash only) |
-| `platform_operators` | Platform admin authorization |
-| `audit_events` | Security/admin audit trail |
+| `schools` | School tenant root (`provisioning` → `pending_setup` → `active` / `suspended` / `closed`) |
+| `school_campuses` | Locations belonging to a school; at most one `is_default` per school |
+| `profiles` | Auth-linked profile (no passwords; not an authorization source) |
+| `school_memberships` | User ↔ school role (`owner`, `admin`, `teacher`, `accountant`, `staff`) + status |
+| `school_applications` | Public registration requests; privileged review/provision fields operator-only |
+| `school_invitations` | Invites with **token_hash only** (never plaintext secrets) |
+| `platform_operators` | Platform admin authorization (no self-service writes) |
+| `audit_events` | Append-only audit; optional `school_id` for school-scoped events |
 
-Later modules: `subscription_plans`, `school_subscriptions`, payment ledger, academic years/terms/grades/classes, students/guardians, attendance, exams, fees, languages/translations, editable site pages.
+### Security highlights
 
-### Design rules
+- RLS + least-privilege grants on all school tables; `FORCE ROW LEVEL SECURITY`.
+- Anon may **INSERT** pending `school_applications` only; no SELECT.
+- Trigger strips privileged application columns for non-operators on INSERT.
+- Unique open-application guard on `(applicant_email, lower(school_name))`.
+- `provisioned_school_id` unique → at most one school per application when provisioning lands.
+- `school_id` reassignment blocked on campuses, memberships, invitations.
+- Helpers: `is_active_school_member(school_id)`, `is_school_manager(school_id)`.
 
-- UUID primary keys; FKs and uniqueness constraints explicit.
-- Enable RLS on tenant-owned tables; least-privilege grants.
-- Public applicants cannot set approval, reviewer, or provisioning fields.
-- Invitation secrets stored hashed; never logged in plaintext.
-- Ordinary school users cannot escalate to platform operator.
+## Legacy organization schema
 
-## Migration inventory (as of Phase 0)
+Still present from earlier milestones (profile, branding, academic structure, org invites, org provisioning RPCs). Frozen for current `/app` behavior. Not required for the new school registration journey.
 
-See filenames under `supabase/migrations/`. Placeholder foundation through platform operators (`20261021200000_platform_operators.sql`). Phase 2 will add school-onboarding migrations and document whether org tables are superseded, frozen, or removed in a dedicated development reset.
+## Migration inventory (Phase 2 additions)
+
+| File | Contents |
+| --- | --- |
+| `20261021300000_school_onboarding_schema.sql` | School tables + `audit_events.school_id` |
+| `20261021301000_school_onboarding_rls.sql` | Helpers, grants, RLS, application privilege protection |
+
+Tests: `supabase/tests/database/school_onboarding_foundation.test.sql`

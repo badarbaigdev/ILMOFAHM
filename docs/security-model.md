@@ -16,9 +16,9 @@
 
 | Actor | Trusted proof | Capabilities (target) |
 | --- | --- | --- |
-| Anonymous visitor | None | Public site; submit school application |
+| Anonymous visitor | None | Public site; INSERT pending `school_applications` only |
 | Platform operator | `platform_operators` row (`status = active`) | Review applications; provision schools; manage platform |
-| School member | Active `school_memberships` (target) / `organization_memberships` (current) | School-scoped operations by role |
+| School member | Active `school_memberships` (new) / `organization_memberships` (legacy `/app`) | School-scoped operations by role |
 | School owner | Membership role from provisioning/invite path | School setup and admin |
 
 ## Surfaces
@@ -26,7 +26,7 @@
 | Surface | Protection |
 | --- | --- |
 | Marketing pages | Public; no secrets; forms must not fake delivery |
-| Public registration | Server validation; insert pending applications only; RLS deny public reads of private apps |
+| Public registration | DB: anon INSERT pending apps only (trigger strips privileged columns); no anon SELECT; Phase 4 adds server action validation |
 | `/platform/*` | Middleware session + server operator checks + RLS |
 | `/app/*` (current) | Middleware session + membership authorization + RLS |
 | Privileged RPCs / service client | Server-only; narrow use (e.g. controlled provisioning) |

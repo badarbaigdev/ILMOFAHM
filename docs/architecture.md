@@ -35,11 +35,11 @@ Deploy: GitHub → Vercel (`apps/web` root). Migrations applied separately throu
 
 ## Tenancy direction
 
-**Current codebase (as of Phase 0):** tenant root tables use **organization** naming (`organizations`, `organization_memberships`, …). Platform operators and institution setup already exist under that model.
+**School onboarding (Phase 2+):** `schools`, `school_campuses`, `school_memberships`, `school_applications`, `school_invitations`, plus shared `profiles` / `platform_operators` / `audit_events`.
 
-**Target architecture (from Phase 2):** **school-based** terminology (`schools`, `school_memberships`, `school_applications`, …). Old organization records are not required to be preserved. A clean schema will be introduced deliberately via new migrations (or a fresh development project), not by uncontrolled production resets.
+**Legacy workspace (temporary):** `organizations`, `campuses`, `organization_memberships`, and related academic tables still power `/app` until a dedicated cutover. New registration → login work must use the school tables and must not depend on organization tables.
 
-Until Phase 2 lands, application code may still reference organization tables. New onboarding work must not invent a parallel undocumented schema.
+See `docs/database-schema.md` for the dual-model note and clean-init steps.
 
 ## Authorization pattern
 

@@ -6,7 +6,7 @@ Track progress across Cursor sessions. Do not mark unfinished work as complete.
 
 ## Current phase
 
-**Phase 1 complete.** Next: **Phase 2 — Design and create the fresh school-based database.**
+**Phase 2 complete.** Next: **Phase 3 — Secure platform administrator authentication** (harden/adapt existing operators for school application review).
 
 ## Phase checklist
 
@@ -14,7 +14,7 @@ Track progress across Cursor sessions. Do not mark unfinished work as complete.
 | --- | --- | --- |
 | 0 Repository baseline | **Complete** | Inspected; checks documented |
 | 1 Public website (static) | **Complete** | All public routes; forms validate without claiming delivery |
-| 2 School-based schema | Not started | Org-based migrations exist today |
+| 2 School-based schema | **Complete** | School onboarding tables + RLS; legacy org tables retained for `/app` |
 | 3 Platform admin auth | Partial (pre-existing) | `platform_operators` + `/platform` under org model |
 | 4 Public school registration | Not started | Form UI ready; DB persistence pending |
 | 5 Application review/approval | Not started | |
@@ -84,9 +84,41 @@ None added or applied in Phase 0/1 (by design).
 ### Known limitations
 
 - Demo / contact / register forms do **not** persist or email — clearly labelled demo-stage
-- Existing DB remains **organization**-based until Phase 2
 - No invented customer stats or live pricing claims
+
+## Phase 2 — What was implemented
+
+School onboarding foundation in versioned migrations (parallel to legacy org model):
+
+| Object | Notes |
+| --- | --- |
+| `schools` | Tenant root with lifecycle status |
+| `school_campuses` | School locations (legacy `campuses` stays org-scoped until cutover) |
+| `school_memberships` | owner/admin/teacher/accountant/staff |
+| `school_applications` | Public pending inserts; operator review fields protected |
+| `school_invitations` | token_hash only |
+| Shared | Reused `profiles`, `platform_operators`; `audit_events.school_id` added |
+
+### Migrations added / applied (local)
+
+- `20261021300000_school_onboarding_schema.sql`
+- `20261021301000_school_onboarding_rls.sql`
+- Applied via `supabase db reset` on local Docker (not production)
+
+### Checks run (Phase 2)
+
+| Check | Result |
+| --- | --- |
+| `supabase db reset` | Pass — all migrations including Phase 2 |
+| `supabase test db` | Pass — **181** tests (includes 25 new school onboarding cases) |
+
+### Known limitations
+
+- Legacy organization schema still present for existing `/app` code
+- School campuses table is `school_campuses` until org cutover
+- No provisioning RPC yet (Phase 6); no public registration server action yet (Phase 4)
+- Application UI still talks to organization tables for the workspace
 
 ## Next milestone
 
-**Phase 2:** Design and create the fresh school-based onboarding schema (`schools`, `campuses`, `profiles`, `school_memberships`, `school_applications`, `school_invitations`, `platform_operators`, `audit_events`) with RLS, grants, and reproducible clean init — without resetting any confirmed production database.
+**Phase 3:** Confirm platform operator bootstrap, session protection, revocation, and audit for school-application administration (build on existing `platform_operators`).

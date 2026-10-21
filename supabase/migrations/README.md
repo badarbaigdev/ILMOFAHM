@@ -35,6 +35,8 @@ That command drops local data, applies every migration in order, then runs `supa
 | `20261020214500_organization_first_owner_provisioning.sql` | ILM-PLAT-005 | Idempotent `create_organization_with_owner` RPC + provisioning keys |
 | `20261020220000_membership_invitations.sql` | ILM-PLAT-006 | Invitations, membership status RPCs, minimal `audit_events` |
 | `20261021120000_audit_events_foundation.sql` | ILM-PLAT-008 | Append-only audit, sanitization, `record_audit_event`, provisioning audit |
+| `20261021300000_school_onboarding_schema.sql` | Phase 2 | `schools`, `school_campuses`, memberships, applications, invitations; `audit_events.school_id` |
+| `20261021301000_school_onboarding_rls.sql` | Phase 2 | School helpers, grants, RLS, application privilege protection |
 
 ## Scope by milestone
 
