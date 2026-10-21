@@ -34,6 +34,7 @@ That command drops local data, applies every migration in order, then runs `supa
 | `20261020213000_tenant_foundation_rls.sql` | ILM-PLAT-002 | Helpers, grants, RLS policies, block `organization_id` reassignment |
 | `20261020214500_organization_first_owner_provisioning.sql` | ILM-PLAT-005 | Idempotent `create_organization_with_owner` RPC + provisioning keys |
 | `20261020220000_membership_invitations.sql` | ILM-PLAT-006 | Invitations, membership status RPCs, minimal `audit_events` |
+| `20261021120000_audit_events_foundation.sql` | ILM-PLAT-008 | Append-only audit, sanitization, `record_audit_event`, provisioning audit |
 
 ## Scope by milestone
 

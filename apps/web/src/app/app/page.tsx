@@ -118,6 +118,12 @@ export default async function AppHomePage({ searchParams }: AppHomePageProps) {
         >
           Manage members
         </Link>
+        <Link
+          href={`/app/audit?organization=${selected.organizationId}`}
+          className="text-ink-soft underline"
+        >
+          Audit log
+        </Link>
         <Link href="/app/onboarding" className="text-ink-soft underline">
           Create organization
         </Link>

@@ -155,7 +155,14 @@ await authorize(
 - Managers (owner/admin): `/app/members` — invite by email/role, revoke pending invites, suspend/reactivate/revoke members.
 - Invite link: `/auth/accept-invite?token=…` (token shown once in the UI; SHA-256 stored in DB). Email delivery is not wired yet — copy the link locally.
 - Accept attaches the signed-in user only when their Auth email matches the invite, and only to that invitation’s organization.
-- Status changes are audited in `audit_events` (`membership.*` actions). Broader audit platform work is ILM-PLAT-008.
+
+## Audit events (ILM-PLAT-008)
+
+- Table `audit_events`: actor, organization, action, target, outcome, timestamp, sanitized metadata (append-only).
+- Writers: `write_audit_event` (internal) and `record_audit_event` (authenticated active members; actor forced to `auth.uid()`).
+- Secrets/tokens stripped; emails redacted (`sanitize_audit_metadata` / `sanitizeAuditMetadata`).
+- Read: managers only (`audit.read` + RLS). UI: `/app/audit`.
+- Emitted for org provisioning, invitations, and membership status changes.
 
 ## Brand
 
