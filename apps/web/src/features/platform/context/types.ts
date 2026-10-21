@@ -2,6 +2,8 @@ export type ContextOrganization = {
   id: string;
   name: string;
   role: string;
+  /** school | academy | both — UX gating only; authorize() still required. */
+  institutionType: string;
 };
 
 export type ContextCampus = {

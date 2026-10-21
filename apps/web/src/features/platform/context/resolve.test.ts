@@ -7,11 +7,13 @@ const ORG_A = {
   id: "11111111-1111-4111-8111-111111111111",
   name: "School A",
   role: "owner",
+  institutionType: "school",
 };
 const ORG_B = {
   id: "22222222-2222-4222-8222-222222222222",
   name: "Academy B",
   role: "admin",
+  institutionType: "academy",
 };
 const CAMPUS_A1 = {
   id: "33333333-3333-4333-8333-333333333333",

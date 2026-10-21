@@ -49,6 +49,7 @@ export async function loadWorkspaceContext(
     id: m.organizationId,
     name: m.organizationName,
     role: m.role,
+    institutionType: m.institutionType,
   }));
 
   if (organizations.length === 0) {

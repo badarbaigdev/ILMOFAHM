@@ -5,6 +5,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 export type ActiveMembershipSummary = {
   organizationId: string;
   organizationName: string;
+  institutionType: string;
   role: string;
   status: string;
 };
@@ -26,7 +27,8 @@ export async function listActiveMemberships(
       organization_id,
       organizations (
         id,
-        name
+        name,
+        institution_type
       )
     `,
     )
@@ -44,12 +46,19 @@ export async function listActiveMemberships(
     const org = Array.isArray(row.organizations)
       ? row.organizations[0]
       : row.organizations;
-    if (!org || typeof org !== "object" || !("id" in org) || !("name" in org)) {
+    if (
+      !org ||
+      typeof org !== "object" ||
+      !("id" in org) ||
+      !("name" in org) ||
+      !("institution_type" in org)
+    ) {
       continue;
     }
     summaries.push({
       organizationId: String(org.id),
       organizationName: String(org.name),
+      institutionType: String(org.institution_type),
       role: row.role,
       status: row.status,
     });

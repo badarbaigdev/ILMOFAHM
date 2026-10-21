@@ -162,7 +162,7 @@ await authorize(
 - Preferences: httpOnly cookies (`ilm_organization_id`, `ilm_campus_id`) + optional query hints.
 - Invalid / cross-tenant IDs are ignored (fall back) without leaking other tenants.
 - Switching runs `switchWorkspaceContextAction` → revalidate `/app` layout. **Cookies are never authorization** — always call `authorize()`.
-- UI: `ContextSelector` on `/app`, `/app/members`, `/app/audit`.
+- UI: `ContextSelector` on `/app`, `/app/settings`, `/app/members`, `/app/audit`.
 
 ## Audit events (ILM-PLAT-008)
 
@@ -170,7 +170,14 @@ await authorize(
 - Writers: `write_audit_event` (internal) and `record_audit_event` (authenticated active members; actor forced to `auth.uid()`).
 - Secrets/tokens stripped; emails redacted (`sanitize_audit_metadata` / `sanitizeAuditMetadata`).
 - Read: managers only (`audit.read` + RLS). UI: `/app/audit`.
-- Emitted for org provisioning, invitations, and membership status changes.
+- Emitted for org provisioning, invitations, membership status changes, and organization profile updates.
+
+## Organization profile (ILM-ORG-001)
+
+- Route: `/app/settings` — view profile; owners/admins update name and institution type (`school` / `academy` / `both`).
+- RPC `update_organization_profile` enforces manager membership, validates inputs, and audits before/after.
+- Trigger blocks Data API changes to `status`, `slug`, `id`, and `created_at`.
+- App helpers `supportsSchool` / `supportsAcademy` gate school-only vs academy-only UI; they are not authorization.
 
 ## Brand
 

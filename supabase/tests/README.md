@@ -31,5 +31,6 @@ supabase test db
 |---|---|
 | ILM-PLAT-002 | Policies and grants in migrations |
 | ILM-PLAT-003 | `database/tenant_foundation_rls.test.sql` — anon, same-tenant, cross-tenant, suspended, ownership reassignment, profile isolation |
+| ILM-ORG-001 | `database/organization_profile.test.sql` — profile RPC allow/deny, lifecycle column protection, cross-tenant denial |
 
 Do not claim tenant isolation for later modules until matching deny tests exist for those tables too.
