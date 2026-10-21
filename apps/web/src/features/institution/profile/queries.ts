@@ -15,6 +15,7 @@ export type OrganizationProfile = {
   status: string;
   timezone: string;
   locale: string;
+  workingDays: number[];
 };
 
 /**
@@ -26,7 +27,9 @@ export async function getOrganizationProfile(
 ): Promise<OrganizationProfile | null> {
   const { data, error } = await supabase
     .from("organizations")
-    .select("id, name, slug, institution_type, status, timezone, locale")
+    .select(
+      "id, name, slug, institution_type, status, timezone, locale, working_days",
+    )
     .eq("id", organizationId)
     .maybeSingle();
 
@@ -40,6 +43,10 @@ export async function getOrganizationProfile(
     throw new Error("Organization has an invalid institution type.");
   }
 
+  const workingDays = Array.isArray(data.working_days)
+    ? data.working_days.map((day: number | string) => Number(day))
+    : [1, 2, 3, 4, 5];
+
   return {
     id: data.id,
     name: data.name,
@@ -48,5 +55,6 @@ export async function getOrganizationProfile(
     status: data.status,
     timezone: data.timezone,
     locale: data.locale,
+    workingDays,
   };
 }

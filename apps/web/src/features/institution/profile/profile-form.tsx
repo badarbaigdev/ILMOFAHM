@@ -24,8 +24,6 @@ type OrganizationProfileFormProps = {
   slug: string | null;
   institutionType: InstitutionType;
   status: string;
-  timezone: string;
-  locale: string;
   canUpdate: boolean;
 };
 
@@ -35,8 +33,6 @@ export function OrganizationProfileForm({
   slug,
   institutionType,
   status,
-  timezone,
-  locale,
   canUpdate,
 }: OrganizationProfileFormProps) {
   const [state, formAction, pending] = useActionState(
@@ -68,16 +64,6 @@ export function OrganizationProfileForm({
         <div>
           <dt className="text-xs tracking-wide text-muted uppercase">Status</dt>
           <dd className="text-ink">{status}</dd>
-        </div>
-        <div>
-          <dt className="text-xs tracking-wide text-muted uppercase">
-            Timezone
-          </dt>
-          <dd className="text-ink">{timezone}</dd>
-        </div>
-        <div>
-          <dt className="text-xs tracking-wide text-muted uppercase">Locale</dt>
-          <dd className="text-ink">{locale}</dd>
         </div>
       </dl>
 

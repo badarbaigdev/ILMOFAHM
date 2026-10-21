@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { CalendarPanel } from "@/features/institution/calendar/calendar-panel";
+import { listOrganizationHolidays } from "@/features/institution/calendar/queries";
 import { CampusesPanel } from "@/features/institution/campuses/campuses-panel";
 import { listOrganizationCampuses } from "@/features/institution/campuses/queries";
 import { OrganizationProfileForm } from "@/features/institution/profile/profile-form";
@@ -109,10 +111,12 @@ export default async function SettingsPage({
 
   let profile;
   let campuses;
+  let holidays;
   try {
-    [profile, campuses] = await Promise.all([
+    [profile, campuses, holidays] = await Promise.all([
       getOrganizationProfile(supabase, context.organization.id),
       listOrganizationCampuses(supabase, context.organization.id),
+      listOrganizationHolidays(supabase, context.organization.id),
     ]);
   } catch {
     return (
@@ -166,7 +170,7 @@ export default async function SettingsPage({
         Settings
       </h1>
       <p className="mt-3 max-w-2xl text-muted">
-        Institution profile, operating mode, and campuses for{" "}
+        Institution profile, locale, calendar, and campuses for{" "}
         <span className="font-medium text-ink">{profile.name}</span>.
       </p>
 
@@ -186,8 +190,15 @@ export default async function SettingsPage({
         slug={profile.slug}
         institutionType={profile.institutionType}
         status={profile.status}
+        canUpdate={canUpdate}
+      />
+
+      <CalendarPanel
+        organizationId={profile.id}
         timezone={profile.timezone}
         locale={profile.locale}
+        workingDays={profile.workingDays}
+        holidays={holidays}
         canUpdate={canUpdate}
       />
 

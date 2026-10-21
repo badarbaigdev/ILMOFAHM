@@ -186,6 +186,12 @@ await authorize(
 - Hard delete is revoked for authenticated clients — archive instead.
 - Campus-scoped `authorize()` requires the campus to belong to the org and be `active`.
 
+## Locale and calendar (ILM-ORG-003)
+
+- `/app/settings` — timezone, default language (`en`/`ur`), ISO working days, and holiday placeholders.
+- RPC `update_organization_locale_settings` uses curated timezone/locale allowlists and audits changes.
+- Table `organization_holidays` with create/delete RPCs (unique per org+date). Academic years/terms are later (ACA-001).
+
 ## Brand
 
 See [`../../docs/00-brand-and-product.md`](../../docs/00-brand-and-product.md) for canonical product copy. Runtime brand strings live in `src/lib/brand.ts`.

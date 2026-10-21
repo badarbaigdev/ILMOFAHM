@@ -33,5 +33,6 @@ supabase test db
 | ILM-PLAT-003 | `database/tenant_foundation_rls.test.sql` — anon, same-tenant, cross-tenant, suspended, ownership reassignment, profile isolation |
 | ILM-ORG-001 | `database/organization_profile.test.sql` — profile RPC allow/deny, lifecycle column protection, cross-tenant denial |
 | ILM-ORG-002 | `database/campus_setup.test.sql` — campus create/update allow/deny, contact validation, hard-delete revoked |
+| ILM-ORG-003 | `database/organization_locale_calendar.test.sql` — locale/working days/holidays allow/deny and validation |
 
 Do not claim tenant isolation for later modules until matching deny tests exist for those tables too.
