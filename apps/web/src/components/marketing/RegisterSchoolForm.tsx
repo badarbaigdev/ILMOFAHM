@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useId, useState } from "react";
+import { useActionState, useId } from "react";
 
 import {
   fieldErrorClass,
@@ -11,53 +11,23 @@ import {
   primaryButtonClass,
 } from "@/components/marketing/form-styles";
 import { formNotices } from "@/features/marketing/content";
-import {
-  type FieldErrors,
-  type RegisterSchoolFormValues,
-  validateRegisterSchoolForm,
-} from "@/features/marketing/validate";
-
-const empty: RegisterSchoolFormValues = {
-  schoolName: "",
-  applicantName: "",
-  applicantEmail: "",
-  phone: "",
-  city: "",
-  institutionType: "",
-  message: "",
-};
+import { submitSchoolApplicationAction } from "@/features/school-applications/actions";
+import { initialSubmitSchoolApplicationState } from "@/features/school-applications/types";
 
 export function RegisterSchoolForm() {
   const formId = useId();
-  const [values, setValues] = useState<RegisterSchoolFormValues>(empty);
-  const [errors, setErrors] = useState<FieldErrors>({});
-  const [status, setStatus] = useState<"idle" | "invalid" | "validated">(
-    "idle",
+  const [state, formAction, pending] = useActionState(
+    submitSchoolApplicationAction,
+    initialSubmitSchoolApplicationState,
   );
 
-  function update<K extends keyof RegisterSchoolFormValues>(
-    key: K,
-    value: RegisterSchoolFormValues[K],
-  ) {
-    setValues((current) => ({ ...current, [key]: value }));
-  }
-
-  function onSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const nextErrors = validateRegisterSchoolForm(values);
-    setErrors(nextErrors);
-    if (Object.keys(nextErrors).length > 0) {
-      setStatus("invalid");
-      return;
-    }
-    setStatus("validated");
-  }
+  const errors = state.fieldErrors ?? {};
 
   return (
     <form
       noValidate
-      onSubmit={onSubmit}
-      className="mx-auto w-full max-w-xl space-y-5"
+      action={formAction}
+      className="relative mx-auto w-full max-w-xl space-y-5"
       aria-describedby={`${formId}-notice`}
     >
       <p
@@ -68,20 +38,31 @@ export function RegisterSchoolForm() {
         {formNotices.registerStage}
       </p>
 
-      {status === "validated" ? (
+      {/* Honeypot — visually and accessibly hidden; bots that fill it are rejected. */}
+      <div className="hidden" aria-hidden="true">
+        <label htmlFor={`${formId}-website`}>Company website</label>
+        <input
+          id={`${formId}-website`}
+          name="website"
+          type="text"
+          tabIndex={-1}
+          autoComplete="off"
+          defaultValue=""
+        />
+      </div>
+
+      {state.success ? (
         <p
           className="rounded-md border border-teal/30 bg-teal/10 px-4 py-3 text-sm text-ink"
           role="status"
         >
-          Your application details look valid. A pending database record is not
-          created yet — public registration persistence arrives in the next
-          backend milestone.
+          {state.success}
         </p>
       ) : null}
 
-      {status === "invalid" ? (
+      {state.error ? (
         <p className="text-sm text-red-800" role="alert">
-          Please correct the highlighted fields.
+          {state.error}
         </p>
       ) : null}
 
@@ -93,8 +74,8 @@ export function RegisterSchoolForm() {
           id={`${formId}-school`}
           name="schoolName"
           className={fieldInputClass}
-          value={values.schoolName}
-          onChange={(event) => update("schoolName", event.target.value)}
+          required
+          disabled={pending || Boolean(state.success)}
           aria-invalid={Boolean(errors.schoolName)}
           aria-describedby={
             errors.schoolName ? `${formId}-school-error` : undefined
@@ -116,8 +97,8 @@ export function RegisterSchoolForm() {
           name="applicantName"
           autoComplete="name"
           className={fieldInputClass}
-          value={values.applicantName}
-          onChange={(event) => update("applicantName", event.target.value)}
+          required
+          disabled={pending || Boolean(state.success)}
           aria-invalid={Boolean(errors.applicantName)}
           aria-describedby={
             errors.applicantName ? `${formId}-applicant-error` : undefined
@@ -140,8 +121,8 @@ export function RegisterSchoolForm() {
           type="email"
           autoComplete="email"
           className={fieldInputClass}
-          value={values.applicantEmail}
-          onChange={(event) => update("applicantEmail", event.target.value)}
+          required
+          disabled={pending || Boolean(state.success)}
           aria-invalid={Boolean(errors.applicantEmail)}
           aria-describedby={
             errors.applicantEmail ? `${formId}-email-error` : undefined
@@ -164,8 +145,7 @@ export function RegisterSchoolForm() {
           type="tel"
           autoComplete="tel"
           className={fieldInputClass}
-          value={values.phone}
-          onChange={(event) => update("phone", event.target.value)}
+          disabled={pending || Boolean(state.success)}
           aria-invalid={Boolean(errors.phone)}
           aria-describedby={errors.phone ? `${formId}-phone-error` : undefined}
         />
@@ -185,8 +165,8 @@ export function RegisterSchoolForm() {
           name="city"
           autoComplete="address-level2"
           className={fieldInputClass}
-          value={values.city}
-          onChange={(event) => update("city", event.target.value)}
+          required
+          disabled={pending || Boolean(state.success)}
           aria-invalid={Boolean(errors.city)}
           aria-describedby={errors.city ? `${formId}-city-error` : undefined}
         />
@@ -205,8 +185,9 @@ export function RegisterSchoolForm() {
           id={`${formId}-type`}
           name="institutionType"
           className={fieldInputClass}
-          value={values.institutionType}
-          onChange={(event) => update("institutionType", event.target.value)}
+          required
+          defaultValue=""
+          disabled={pending || Boolean(state.success)}
           aria-invalid={Boolean(errors.institutionType)}
           aria-describedby={
             errors.institutionType ? `${formId}-type-error` : undefined
@@ -223,7 +204,7 @@ export function RegisterSchoolForm() {
           </p>
         ) : (
           <p className={fieldHintClass}>
-            Helps us tailor onboarding when registration is connected.
+            Helps platform operators tailor onboarding after approval.
           </p>
         )}
       </div>
@@ -237,13 +218,29 @@ export function RegisterSchoolForm() {
           id={`${formId}-message`}
           name="message"
           className={fieldTextareaClass}
-          value={values.message}
-          onChange={(event) => update("message", event.target.value)}
+          disabled={pending || Boolean(state.success)}
+          aria-invalid={Boolean(errors.message)}
+          aria-describedby={
+            errors.message ? `${formId}-message-error` : undefined
+          }
         />
+        {errors.message ? (
+          <p id={`${formId}-message-error`} className={fieldErrorClass}>
+            {errors.message}
+          </p>
+        ) : null}
       </div>
 
-      <button type="submit" className={primaryButtonClass}>
-        Validate application
+      <button
+        type="submit"
+        className={primaryButtonClass}
+        disabled={pending || Boolean(state.success)}
+      >
+        {pending
+          ? "Submitting…"
+          : state.success
+            ? "Application submitted"
+            : "Submit application"}
       </button>
     </form>
   );

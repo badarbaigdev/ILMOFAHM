@@ -6,7 +6,7 @@ Track progress across Cursor sessions. Do not mark unfinished work as complete.
 
 ## Current phase
 
-**Phase 3 complete.** Next: **Phase 4 — Public school registration** (wire `/register-school` to `school_applications`).
+**Phase 4 complete.** Next: **Phase 5 — Platform application review and approval**.
 
 ## Phase checklist
 
@@ -16,7 +16,7 @@ Track progress across Cursor sessions. Do not mark unfinished work as complete.
 | 1 Public website (static) | **Complete** | All public routes; forms validate without claiming delivery |
 | 2 School-based schema | **Complete** | School onboarding tables + RLS; legacy org tables retained for `/app` |
 | 3 Platform admin auth | **Complete** | Controlled bootstrap, revocation, middleware + unauthorized page |
-| 4 Public school registration | Not started | Form UI ready; DB persistence pending |
+| 4 Public school registration | **Complete** | `/register-school` → pending `school_applications` |
 | 5 Application review/approval | Not started | |
 | 6 School provisioning | Not started | Org provisioning exists; school flow pending |
 | 7 Owner invitation/activation | Partial (org invites) | Adapt for school model later |
@@ -152,6 +152,36 @@ Hardened platform operator authentication:
 - Platform dashboard still org-centric until Phase 5 school application queue
 - Recovery of a fully locked-out operator set requires privileged DB access (by design)
 
+## Phase 4 — What was implemented
+
+Public school registration persists pending applications:
+
+| Piece | Detail |
+| --- | --- |
+| Server action | `submitSchoolApplicationAction` — validates/normalizes; never accepts approval fields |
+| Abuse controls | Honeypot field + in-process rate limit (IP + email) |
+| Duplicates | Unique open-application index → clear user message |
+| UI | `/register-school` submits for real; success states do not claim an active school |
+| Audit | Trigger writes sanitized `school.application.submitted` events (no email/message) |
+
+### Migrations added / applied (local)
+
+- `20261021320000_school_application_submit_audit.sql`
+
+### Checks run (Phase 4)
+
+| Check | Result |
+| --- | --- |
+| `supabase db reset` + `supabase test db` | Pass — **200** tests |
+| lint / typecheck / unit / build | Pass — **107** unit tests |
+| Browser | Submitted application; success message shown; DB row `pending` confirmed |
+
+### Known limitations
+
+- Rate limit is single-process (fine for one Next instance; not distributed)
+- Demo/contact forms still demo-stage only
+- No operator review UI yet (Phase 5)
+
 ## Next milestone
 
-**Phase 4:** Connect `/register-school` to `school_applications` with server validation, rate-limit/abuse basics, and honest success/error states.
+**Phase 5:** Platform application queue (`/platform/requests`), status transitions, review notes, rejection / information-requested, and audit — then trigger controlled provisioning on approval.

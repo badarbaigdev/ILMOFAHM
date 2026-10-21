@@ -42,5 +42,6 @@ supabase test db
 | Platform operator | `database/platform_operators.test.sql` — Superadmin provision allow/deny; org admin cannot use platform RPCs |
 | Phase 2 school onboarding | `database/school_onboarding_foundation.test.sql` — anon apply, cross-school deny, operator review, invitation scope, privilege strip |
 | Phase 3 operator bootstrap | `database/platform_operator_bootstrap.test.sql` — one-shot bootstrap, deny self-promote, suspend/revoke, last-active guard, audit |
+| Phase 4 school applications | `database/school_application_submit.test.sql` — anon pending insert, privilege strip, duplicate deny, sanitized audit |
 
 Do not claim tenant isolation for later modules until matching deny tests exist for those tables too.

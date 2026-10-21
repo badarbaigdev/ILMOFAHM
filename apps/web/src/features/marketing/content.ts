@@ -234,5 +234,5 @@ export const formNotices = {
   demoStage:
     "Demo-stage form: your browser validates the fields, but messages are not stored or emailed yet. A server integration will be added in a later milestone.",
   registerStage:
-    "Registration entry is ready for visitors. Submitting an application to the database arrives in the next backend milestone — this page currently validates input only.",
+    "Your application is stored as pending for platform review. Submitting does not create an active school or grant login access.",
 } as const;
