@@ -181,11 +181,10 @@ export function MembersPanel({
   invitations: PendingInvitationRow[];
 }) {
   return (
-    <div className="mx-auto w-full max-w-5xl px-6 py-16 sm:px-10">
-      <h1 className="font-display text-4xl tracking-tight text-ink">Members</h1>
-      <p className="mt-3 max-w-2xl text-muted">
-        {organizationName}. Invitations are time-bound and single-use. Suspended
-        or revoked members lose access on the next authorized request.
+    <div className="mx-auto w-full max-w-5xl px-6 pb-16 pt-8 sm:px-10">
+      <p className="max-w-2xl text-sm text-muted">
+        Invitations for {organizationName} are time-bound and single-use.
+        Suspended or revoked members lose access on the next authorized request.
       </p>
 
       <section aria-labelledby="members-heading" className="mt-10">

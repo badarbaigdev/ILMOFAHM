@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { PageSectionNav } from "@/components/shell/PageSectionNav";
 import { BrandingPanel } from "@/features/institution/branding/branding-panel";
 import { CalendarPanel } from "@/features/institution/calendar/calendar-panel";
 import { listOrganizationHolidays } from "@/features/institution/calendar/queries";
@@ -20,6 +20,14 @@ import {
 import { ContextSelector } from "@/features/platform/context";
 import { loadWorkspaceContext } from "@/features/platform/context/load";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+
+const SETTINGS_SECTIONS = [
+  { id: "org-profile-heading", label: "Profile" },
+  { id: "branding-heading", label: "Branding" },
+  { id: "calendar-heading", label: "Locale & calendar" },
+  { id: "campuses-heading", label: "Campuses" },
+  { id: "config-changes-heading", label: "Recent config changes" },
+] as const;
 
 type SettingsPageProps = {
   searchParams: Promise<{ organization?: string; campus?: string }>;
@@ -176,17 +184,12 @@ export default async function SettingsPage({
     <main
       id="main-content"
       tabIndex={-1}
-      className="mx-auto w-full max-w-5xl px-6 py-16 outline-none sm:px-10"
+      className="mx-auto w-full max-w-5xl px-6 py-12 outline-none sm:px-10 sm:py-16"
     >
-      <p className="text-sm text-muted">
-        <Link
-          href={`/app?organization=${context.organization.id}`}
-          className="text-ink-soft underline"
-        >
-          Back to workspace
-        </Link>
+      <p className="text-[0.65rem] font-semibold tracking-[0.2em] text-teal uppercase">
+        Organization
       </p>
-      <h1 className="mt-4 font-display text-4xl tracking-tight text-ink">
+      <h1 className="mt-2 font-display text-4xl tracking-tight text-ink">
         Settings
       </h1>
       <p className="mt-3 max-w-2xl text-muted">
@@ -203,6 +206,8 @@ export default async function SettingsPage({
           returnTo="/app/settings"
         />
       </div>
+
+      <PageSectionNav sections={SETTINGS_SECTIONS} />
 
       <OrganizationProfileForm
         organizationId={profile.id}

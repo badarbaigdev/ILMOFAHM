@@ -137,16 +137,21 @@ export default async function MembersPage({ searchParams }: MembersPageProps) {
 
   return (
     <main id="main-content" tabIndex={-1} className="outline-none">
-      <div className="mx-auto w-full max-w-5xl px-6 pt-10 sm:px-10">
-        <p className="text-sm text-muted">
-          <Link
-            href={`/app?organization=${context.organization.id}`}
-            className="underline"
-          >
-            Workspace
-          </Link>
+      <div className="mx-auto w-full max-w-5xl px-6 pt-12 sm:px-10 sm:pt-16">
+        <p className="text-[0.65rem] font-semibold tracking-[0.2em] text-teal uppercase">
+          Access
         </p>
-        <div className="mt-4">
+        <h1 className="mt-2 font-display text-4xl tracking-tight text-ink">
+          Members
+        </h1>
+        <p className="mt-3 max-w-2xl text-muted">
+          Invitations and membership for{" "}
+          <span className="font-medium text-ink">
+            {context.organization.name}
+          </span>
+          .
+        </p>
+        <div className="mt-8">
           <ContextSelector
             organizations={context.organizations}
             campuses={context.allCampuses}

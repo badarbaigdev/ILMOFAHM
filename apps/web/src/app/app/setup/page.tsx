@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { PageSectionNav } from "@/components/shell/PageSectionNav";
 import { AcademyPanel } from "@/features/academic/academy/academy-panel";
 import { listCohorts, listCourses } from "@/features/academic/academy/queries";
 import { SchoolPanel } from "@/features/academic/school/school-panel";
@@ -119,7 +119,7 @@ export default async function SetupPage({ searchParams }: SetupPageProps) {
   const showSchool = supportsSchool(institutionType);
   const showAcademy = supportsAcademy(institutionType);
 
-  const [years, terms, grades, sections, subjects, courses, cohorts] =
+  const [years, terms, grades, sectionRows, subjects, courses, cohorts] =
     await Promise.all([
       listAcademicYears(supabase, context.organization.id),
       listAcademicTermsForOrganization(supabase, context.organization.id),
@@ -140,35 +140,37 @@ export default async function SetupPage({ searchParams }: SetupPageProps) {
         : Promise.resolve([]),
     ]);
 
+  const pageSections = [
+    { id: "academic-years-heading", label: "Academic years" },
+    ...(showSchool
+      ? [{ id: "school-structure-heading", label: "School structure" }]
+      : []),
+    ...(showAcademy
+      ? [{ id: "academy-structure-heading", label: "Academy structure" }]
+      : []),
+  ];
+
   return (
     <main
       id="main-content"
       tabIndex={-1}
-      className="mx-auto w-full max-w-5xl px-6 py-16 outline-none sm:px-10"
+      className="mx-auto w-full max-w-5xl px-6 py-12 outline-none sm:px-10 sm:py-16"
     >
-      <p className="text-sm text-muted">
-        <Link href="/app" className="text-ink-soft underline">
-          Workspace
-        </Link>
-        {" · "}
-        <Link
-          href={`/app/settings?organization=${context.organization.id}`}
-          className="text-ink-soft underline"
-        >
-          Settings
-        </Link>
+      <p className="text-[0.65rem] font-semibold tracking-[0.2em] text-teal uppercase">
+        Academic
       </p>
-
-      <h1 className="mt-4 font-display text-4xl tracking-tight text-ink">
+      <h1 className="mt-2 font-display text-4xl tracking-tight text-ink">
         Academic setup
       </h1>
-      <p className="mt-4 max-w-2xl text-muted">
+      <p className="mt-3 max-w-2xl text-muted">
         Configure years, terms, and structure for{" "}
-        <span className="text-ink">{context.organization.name}</span> (
-        {institutionTypeLabel(institutionType)}).
+        <span className="font-medium text-ink">
+          {context.organization.name}
+        </span>{" "}
+        ({institutionTypeLabel(institutionType)}).
       </p>
 
-      <div className="mt-6">
+      <div className="mt-8">
         <ContextSelector
           organizations={context.organizations}
           campuses={context.allCampuses}
@@ -177,6 +179,8 @@ export default async function SetupPage({ searchParams }: SetupPageProps) {
           returnTo="/app/setup"
         />
       </div>
+
+      <PageSectionNav sections={pageSections} />
 
       <YearsPanel
         organizationId={context.organization.id}
@@ -189,7 +193,7 @@ export default async function SetupPage({ searchParams }: SetupPageProps) {
         <SchoolPanel
           organizationId={context.organization.id}
           grades={grades}
-          sections={sections}
+          sections={sectionRows}
           subjects={subjects}
           canManage={canManage}
         />

@@ -129,32 +129,21 @@ export default async function AuditPage({ searchParams }: AuditPageProps) {
     <main
       id="main-content"
       tabIndex={-1}
-      className="mx-auto w-full max-w-5xl px-6 py-16 outline-none sm:px-10"
+      className="mx-auto w-full max-w-5xl px-6 py-12 outline-none sm:px-10 sm:py-16"
     >
-      <p className="text-sm text-muted">
-        <Link
-          href={`/app?organization=${context.organization.id}`}
-          className="underline"
-        >
-          Workspace
-        </Link>
-        {" · "}
-        <Link
-          href={`/app/settings?organization=${context.organization.id}`}
-          className="underline"
-        >
-          Settings
-        </Link>
-        {" · "}
-        <Link
-          href={`/app/members?organization=${context.organization.id}`}
-          className="underline"
-        >
-          Members
-        </Link>
+      <p className="text-[0.65rem] font-semibold tracking-[0.2em] text-teal uppercase">
+        Compliance
+      </p>
+      <h1 className="mt-2 font-display text-4xl tracking-tight text-ink">
+        {configOnly ? "Configuration audit" : "Audit log"}
+      </h1>
+      <p className="mt-3 max-w-2xl text-muted">
+        {configOnly
+          ? `Institution settings changes for ${context.organization.name}, with editor role, effective time, and before/after values.`
+          : `Privileged actions for ${context.organization.name}. Entries are append-only; secrets and tokens are never stored.`}
       </p>
 
-      <div className="mt-4">
+      <div className="mt-8">
         <ContextSelector
           organizations={context.organizations}
           campuses={context.allCampuses}
@@ -163,15 +152,6 @@ export default async function AuditPage({ searchParams }: AuditPageProps) {
           returnTo={configOnly ? "/app/audit?category=config" : "/app/audit"}
         />
       </div>
-
-      <h1 className="mt-6 font-display text-4xl tracking-tight text-ink">
-        {configOnly ? "Configuration audit" : "Audit log"}
-      </h1>
-      <p className="mt-3 max-w-2xl text-muted">
-        {configOnly
-          ? `Institution settings changes for ${context.organization.name}, with editor role, effective time, and before/after values.`
-          : `Privileged actions for ${context.organization.name}. Entries are append-only; secrets and tokens are never stored.`}
-      </p>
       <p className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-sm">
         <Link
           href={`/app/audit?organization=${context.organization.id}`}
