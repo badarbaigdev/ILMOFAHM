@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import {
@@ -10,8 +9,11 @@ import { SchoolAttendancePanel } from "@/features/schools/attendance/attendance-
 import {
   getSchoolAttendanceSession,
   listSchoolAttendanceMarks,
+  listSchoolAttendanceMarksForDate,
   listSchoolAttendanceSessions,
+  listSchoolAttendanceSessionsForDate,
 } from "@/features/schools/attendance/queries";
+import { summarizeSchoolAttendanceDay } from "@/features/schools/attendance/summary";
 import {
   listSchoolGrades,
   listSchoolSections,
@@ -22,7 +24,12 @@ import { getRequestSchoolSlug } from "@/lib/tenancy/request";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 type PageProps = {
-  searchParams: Promise<{ school?: string; section?: string; date?: string }>;
+  searchParams: Promise<{
+    school?: string;
+    section?: string;
+    grade?: string;
+    date?: string;
+  }>;
 };
 
 export default async function SchoolAttendancePage({ searchParams }: PageProps) {
@@ -30,6 +37,7 @@ export default async function SchoolAttendancePage({ searchParams }: PageProps) 
   const requestedSchoolId = params.school?.trim() ?? "";
   const hostSchoolSlug = await getRequestSchoolSlug();
   const selectedSectionId = params.section?.trim() ?? "";
+  const selectedGradeId = params.grade?.trim() ?? "";
   const selectedDate =
     params.date?.trim() || new Date().toISOString().slice(0, 10);
 
@@ -58,9 +66,9 @@ export default async function SchoolAttendancePage({ searchParams }: PageProps) 
       <main
         id="main-content"
         tabIndex={-1}
-        className="mx-auto w-full max-w-3xl px-6 py-16 outline-none sm:px-10"
+        className="mx-auto w-full max-w-6xl px-4 py-8 outline-none sm:px-6 lg:px-8"
       >
-        <h1 className="font-display text-3xl tracking-tight text-ink">
+        <h1 className="text-2xl font-semibold tracking-tight text-ink">
           Attendance
         </h1>
         <p role="alert" className="mt-4 text-sm text-red-700">
@@ -75,9 +83,9 @@ export default async function SchoolAttendancePage({ searchParams }: PageProps) 
       <main
         id="main-content"
         tabIndex={-1}
-        className="mx-auto w-full max-w-3xl px-6 py-16 outline-none sm:px-10"
+        className="mx-auto w-full max-w-6xl px-4 py-8 outline-none sm:px-6 lg:px-8"
       >
-        <h1 className="font-display text-3xl tracking-tight text-ink">
+        <h1 className="text-2xl font-semibold tracking-tight text-ink">
           Attendance
         </h1>
         <p className="mt-4 text-sm text-muted">
@@ -102,9 +110,9 @@ export default async function SchoolAttendancePage({ searchParams }: PageProps) 
         <main
           id="main-content"
           tabIndex={-1}
-          className="mx-auto w-full max-w-3xl px-6 py-16 outline-none sm:px-10"
+          className="mx-auto w-full max-w-6xl px-4 py-8 outline-none sm:px-6 lg:px-8"
         >
-          <h1 className="font-display text-3xl tracking-tight text-ink">
+          <h1 className="text-2xl font-semibold tracking-tight text-ink">
             Attendance
           </h1>
           <p role="alert" className="mt-4 text-sm text-red-700">
@@ -129,21 +137,34 @@ export default async function SchoolAttendancePage({ searchParams }: PageProps) 
   let grades;
   let students;
   let sessions;
+  let daySessions;
+  let dayMarks;
   try {
-    [sections, grades, students, sessions] = await Promise.all([
-      listSchoolSections(supabase, active.school.id),
-      listSchoolGrades(supabase, active.school.id),
-      listSchoolStudents(supabase, active.school.id),
-      listSchoolAttendanceSessions(supabase, active.school.id),
-    ]);
+    [sections, grades, students, sessions, daySessions, dayMarks] =
+      await Promise.all([
+        listSchoolSections(supabase, active.school.id),
+        listSchoolGrades(supabase, active.school.id),
+        listSchoolStudents(supabase, active.school.id),
+        listSchoolAttendanceSessions(supabase, active.school.id),
+        listSchoolAttendanceSessionsForDate(
+          supabase,
+          active.school.id,
+          selectedDate,
+        ),
+        listSchoolAttendanceMarksForDate(
+          supabase,
+          active.school.id,
+          selectedDate,
+        ),
+      ]);
   } catch {
     return (
       <main
         id="main-content"
         tabIndex={-1}
-        className="mx-auto w-full max-w-3xl px-6 py-16 outline-none sm:px-10"
+        className="mx-auto w-full max-w-6xl px-4 py-8 outline-none sm:px-6 lg:px-8"
       >
-        <h1 className="font-display text-3xl tracking-tight text-ink">
+        <h1 className="text-2xl font-semibold tracking-tight text-ink">
           Attendance
         </h1>
         <p role="alert" className="mt-4 text-sm text-red-700">
@@ -151,6 +172,18 @@ export default async function SchoolAttendancePage({ searchParams }: PageProps) 
         </p>
       </main>
     );
+  }
+
+  const daySummary = summarizeSchoolAttendanceDay({
+    date: selectedDate,
+    sessions: daySessions,
+    marks: dayMarks,
+  });
+
+  let resolvedGradeId = selectedGradeId;
+  if (!resolvedGradeId && selectedSectionId) {
+    resolvedGradeId =
+      sections.find((s) => s.id === selectedSectionId)?.gradeId ?? "";
   }
 
   let activeSession = null;
@@ -171,9 +204,9 @@ export default async function SchoolAttendancePage({ searchParams }: PageProps) 
         <main
           id="main-content"
           tabIndex={-1}
-          className="mx-auto w-full max-w-3xl px-6 py-16 outline-none sm:px-10"
+          className="mx-auto w-full max-w-6xl px-4 py-8 outline-none sm:px-6 lg:px-8"
         >
-          <h1 className="font-display text-3xl tracking-tight text-ink">
+          <h1 className="text-2xl font-semibold tracking-tight text-ink">
             Attendance
           </h1>
           <p role="alert" className="mt-4 text-sm text-red-700">
@@ -188,38 +221,24 @@ export default async function SchoolAttendancePage({ searchParams }: PageProps) 
     <main
       id="main-content"
       tabIndex={-1}
-      className="mx-auto w-full max-w-3xl px-6 py-16 outline-none sm:px-10"
+      className="mx-auto w-full max-w-6xl px-4 py-8 outline-none sm:px-6 lg:px-8"
     >
-      <p className="text-sm text-muted">
-        <Link
-          href={`/school?school=${active.school.id}`}
-          className="text-ink underline-offset-2 hover:underline"
-        >
-          ← {active.school.name}
-        </Link>
-      </p>
-      <h1 className="mt-4 font-display text-3xl tracking-tight text-ink">
-        Attendance
-      </h1>
-      <p className="mt-2 max-w-2xl text-sm text-muted">
-        Daily section attendance for {active.school.name}.
-      </p>
-
-      <div className="mt-10">
-        <SchoolAttendancePanel
-          schoolId={active.school.id}
-          sections={sections}
-          grades={grades}
-          students={students}
-          sessions={sessions}
-          activeSession={activeSession}
-          marks={marks}
-          selectedSectionId={selectedSectionId}
-          selectedDate={selectedDate}
-          canManage={canManage}
-          canCorrect={canCorrect}
-        />
-      </div>
+      <SchoolAttendancePanel
+        schoolId={active.school.id}
+        schoolName={active.school.name}
+        sections={sections}
+        grades={grades}
+        students={students}
+        sessions={sessions}
+        activeSession={activeSession}
+        marks={marks}
+        selectedGradeId={resolvedGradeId}
+        selectedSectionId={selectedSectionId}
+        selectedDate={selectedDate}
+        daySummary={daySummary}
+        canManage={canManage}
+        canCorrect={canCorrect}
+      />
     </main>
   );
 }

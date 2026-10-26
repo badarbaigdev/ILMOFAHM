@@ -72,4 +72,13 @@ describe("validateCorrectAttendanceInput", () => {
     });
     assert.equal(result.ok, true);
   });
+
+  it("accepts half_day", () => {
+    const result = validateCorrectAttendanceInput({
+      markId: "44444444-4444-4444-8444-444444444444",
+      status: "half_day",
+      reason: "Left after midday clinic visit",
+    });
+    assert.equal(result.ok, true);
+  });
 });

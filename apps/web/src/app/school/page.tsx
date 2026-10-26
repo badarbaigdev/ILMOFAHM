@@ -7,7 +7,19 @@ import {
   buildSlices,
 } from "@/features/platform/ui/dashboard-charts";
 import { listSchoolAcademicYears } from "@/features/schools/academic/queries";
-import { listSchoolAttendanceSessions } from "@/features/schools/attendance/queries";
+import {
+  listSchoolAttendanceMarksForDate,
+  listSchoolAttendanceSessions,
+  listSchoolAttendanceSessionsForDate,
+} from "@/features/schools/attendance/queries";
+import {
+  primaryStatusEntries,
+  summarizeSchoolAttendanceDay,
+} from "@/features/schools/attendance/summary";
+import {
+  ATTENDANCE_STATUS_LABELS,
+  type AttendanceStatus,
+} from "@/features/schools/attendance/validate";
 import { loadSchoolContext } from "@/features/schools/context";
 import { listSchoolFeeCharges } from "@/features/schools/fees/queries";
 import { summarizeFeeCharges } from "@/features/schools/fees/summary";
@@ -103,6 +115,7 @@ export default async function SchoolPortalPage({ searchParams }: PageProps) {
 
   const schoolId = active.school.id;
   const q = `school=${schoolId}`;
+  const today = new Date().toISOString().slice(0, 10);
 
   let studentCount = 0;
   let teacherCount = 0;
@@ -111,17 +124,36 @@ export default async function SchoolPortalPage({ searchParams }: PageProps) {
   let feeSummary = { collected: "0", due: "0", overdue: "0" };
   let attendanceOpen = 0;
   let studentStatus: Record<string, number> = {};
+  let attendanceDay = summarizeSchoolAttendanceDay({
+    date: today,
+    sessions: [],
+    marks: [],
+  });
 
   try {
-    const [students, teachers, enrolments, years, charges, sessions] =
-      await Promise.all([
-        listSchoolStudents(supabase, schoolId),
-        listSchoolTeachers(supabase, schoolId),
-        listSchoolEnrolments(supabase, schoolId),
-        listSchoolAcademicYears(supabase, schoolId),
-        listSchoolFeeCharges(supabase, schoolId).catch(() => []),
-        listSchoolAttendanceSessions(supabase, schoolId).catch(() => []),
-      ]);
+    const [
+      students,
+      teachers,
+      enrolments,
+      years,
+      charges,
+      sessions,
+      daySessions,
+      dayMarks,
+    ] = await Promise.all([
+      listSchoolStudents(supabase, schoolId),
+      listSchoolTeachers(supabase, schoolId),
+      listSchoolEnrolments(supabase, schoolId),
+      listSchoolAcademicYears(supabase, schoolId),
+      listSchoolFeeCharges(supabase, schoolId).catch(() => []),
+      listSchoolAttendanceSessions(supabase, schoolId).catch(() => []),
+      listSchoolAttendanceSessionsForDate(supabase, schoolId, today).catch(
+        () => [],
+      ),
+      listSchoolAttendanceMarksForDate(supabase, schoolId, today).catch(
+        () => [],
+      ),
+    ]);
     studentCount = students.length;
     teacherCount = teachers.filter((t) => t.status === "active").length;
     enrolmentCount = enrolments.filter((e) => e.status === "enrolled").length;
@@ -132,6 +164,11 @@ export default async function SchoolPortalPage({ searchParams }: PageProps) {
       acc[s.status] = (acc[s.status] ?? 0) + 1;
       return acc;
     }, {});
+    attendanceDay = summarizeSchoolAttendanceDay({
+      date: today,
+      sessions: daySessions,
+      marks: dayMarks,
+    });
   } catch {
     // Dashboard still renders with zeros when a module query fails.
   }
@@ -142,12 +179,39 @@ export default async function SchoolPortalPage({ searchParams }: PageProps) {
     return `₨ ${n.toLocaleString("en-PK", { maximumFractionDigits: 0 })}`;
   };
 
+  const todayLabel = new Date(`${today}T12:00:00`).toLocaleDateString(
+    undefined,
+    { weekday: "short", month: "short", day: "numeric" },
+  );
+
+  const attendanceSlices = buildSlices(
+    primaryStatusEntries(attendanceDay.byStatus)
+      .filter((entry) => entry.value > 0)
+      .map((entry) => ({
+        id: entry.status,
+        label: ATTENDANCE_STATUS_LABELS[entry.status],
+        value: entry.value,
+      })),
+  );
+
   const shortcuts = [
+    {
+      href: `/school/attendance?${q}&date=${today}`,
+      label: "Take attendance",
+      hint: attendanceOpen ? `${attendanceOpen} draft` : "Open register",
+    },
     { href: `/school/students?${q}`, label: "Students", hint: `${studentCount}` },
     { href: `/school/teachers?${q}`, label: "Teachers", hint: `${teacherCount}` },
-    { href: `/school/attendance?${q}`, label: "Attendance", hint: attendanceOpen ? `${attendanceOpen} draft` : "Open" },
-    { href: `/school/fees?${q}`, label: "Fees", hint: formatMoney(feeSummary.due) },
-    { href: `/school/academic?${q}`, label: "Classes", hint: `${yearCount} year${yearCount === 1 ? "" : "s"}` },
+    {
+      href: `/school/fees?${q}`,
+      label: "Fees",
+      hint: formatMoney(feeSummary.due),
+    },
+    {
+      href: `/school/academic?${q}`,
+      label: "Classes",
+      hint: `${yearCount} year${yearCount === 1 ? "" : "s"}`,
+    },
     { href: `/school/guardians?${q}`, label: "Guardians", hint: "Contacts" },
     { href: `/school/members?${q}`, label: "Staff", hint: "Roles" },
     { href: `/school/settings?${q}`, label: "Settings", hint: "School" },
@@ -171,13 +235,15 @@ export default async function SchoolPortalPage({ searchParams }: PageProps) {
             <StatusBadge status={active.school.status} />
             <span className="mx-2 text-line">·</span>
             {active.membership.role}
+            <span className="mx-2 text-line">·</span>
+            {todayLabel}
           </p>
         </div>
         <Link
-          href={`/school/students?${q}`}
+          href={`/school/attendance?${q}&date=${today}`}
           className="rounded-md bg-teal px-3 py-2 text-sm font-medium text-white no-underline"
         >
-          Open students
+          Take attendance
         </Link>
       </div>
 
@@ -193,20 +259,33 @@ export default async function SchoolPortalPage({ searchParams }: PageProps) {
           tone="info"
         />
         <StatCard
-          label="Teachers"
-          value={teacherCount}
-          hint="Active staff"
-          href={`/school/teachers?${q}`}
+          label="Present today"
+          value={
+            attendanceDay.byStatus.present +
+            attendanceDay.byStatus.late +
+            attendanceDay.byStatus.half_day
+          }
+          hint={
+            attendanceDay.presentRate != null
+              ? `${attendanceDay.presentRate}% of marked`
+              : "No marks yet"
+          }
+          href={`/school/attendance?${q}&date=${today}`}
+          tone="ok"
         />
         <StatCard
-          label="Fees due"
-          value={formatMoney(feeSummary.due)}
-          hint={`Collected ${formatMoney(feeSummary.collected)}`}
-          href={`/school/fees?${q}`}
-          tone={Number(feeSummary.due) > 0 ? "warn" : "ok"}
+          label="Absent today"
+          value={
+            attendanceDay.byStatus.absent + attendanceDay.byStatus.excused
+          }
+          hint={`${attendanceDay.byStatus.absent} absent · ${attendanceDay.byStatus.excused} excused`}
+          href={`/school/attendance?${q}&date=${today}`}
+          tone={
+            attendanceDay.byStatus.absent > 0 ? "warn" : "default"
+          }
         />
         <StatCard
-          label="Draft attendance"
+          label="Draft registers"
           value={attendanceOpen}
           hint="Sessions to submit"
           href={`/school/attendance?${q}`}
@@ -214,7 +293,53 @@ export default async function SchoolPortalPage({ searchParams }: PageProps) {
         />
       </section>
 
+      <section
+        aria-label="Today attendance summary"
+        className="mt-4 rounded-2xl border border-line bg-paper-elevated p-5"
+      >
+        <div className="flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <h2 className="text-sm font-semibold text-ink">
+              Attendance today
+            </h2>
+            <p className="mt-1 text-sm text-muted">
+              {attendanceDay.markedStudents > 0
+                ? `${attendanceDay.markedStudents} students marked · ${attendanceDay.draftSessions} draft · ${attendanceDay.submittedSessions} submitted`
+                : "No registers opened for today yet."}
+            </p>
+          </div>
+          <Link
+            href={`/school/attendance?${q}&date=${today}`}
+            className="text-sm text-teal no-underline hover:underline"
+          >
+            Open attendance
+          </Link>
+        </div>
+
+        <div className="mt-4 grid gap-2 sm:grid-cols-5">
+          {primaryStatusEntries(attendanceDay.byStatus).map(
+            ({ status, value }) => (
+              <div
+                key={status}
+                className="rounded-xl border border-line bg-paper px-3 py-3"
+              >
+                <p className="text-[0.65rem] font-semibold tracking-wide text-muted uppercase">
+                  {ATTENDANCE_STATUS_LABELS[status as AttendanceStatus]}
+                </p>
+                <p className="mt-1 text-2xl font-semibold text-ink">{value}</p>
+              </div>
+            ),
+          )}
+        </div>
+      </section>
+
       <section className="mt-4 grid gap-4 lg:grid-cols-3">
+        <DonutChart
+          title="Attendance mix"
+          slices={attendanceSlices}
+          centerLabel="Today"
+          emptyLabel="Mark attendance to see today’s mix."
+        />
         <DonutChart
           title="Student status"
           slices={buildSlices(
@@ -228,9 +353,9 @@ export default async function SchoolPortalPage({ searchParams }: PageProps) {
           emptyLabel="Add students to see the mix."
         />
 
-        <section className="rounded-2xl border border-line bg-paper-elevated p-5 lg:col-span-2">
+        <section className="rounded-2xl border border-line bg-paper-elevated p-5">
           <h2 className="text-sm font-semibold text-ink">Quick links</h2>
-          <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-4 grid gap-2 sm:grid-cols-2">
             {shortcuts.map((card) => (
               <Link
                 key={card.href}
@@ -242,6 +367,9 @@ export default async function SchoolPortalPage({ searchParams }: PageProps) {
               </Link>
             ))}
           </div>
+          <p className="mt-4 text-xs text-muted">
+            Fees due {formatMoney(feeSummary.due)} · Teachers {teacherCount}
+          </p>
         </section>
       </section>
 
