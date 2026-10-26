@@ -81,24 +81,23 @@ Build uses public placeholder env vars only. CI does **not** apply Supabase migr
 
 ## App shell and health
 
-- Public shell: `src/components/shell/AppShell.tsx` (skip link, brand header, account links, placeholder module nav, footer).
-- Landing: `/` — brand page plus foundation status (no fake school data).
+- Marketing shell: `src/components/marketing/*` for public routes under `src/app/(marketing)/` (`/`, `/features`, `/pricing`, `/demo`, `/register-school`, `/contact`, `/privacy`, `/terms`). Static content; forms validate only until backends land.
+- Authenticated shell: `src/components/shell/AppShell.tsx` for `/platform`, `/school`, and `/auth`.
 - Health: `GET /api/health` → `{ status, service, timestamp }` only (no secrets, no DB probe).
+- Delivery status: [`../../docs/implementation-status.md`](../../docs/implementation-status.md).
 
 ## Auth SSR (ILM-PLAT-004)
 
-Cookie session via `@supabase/ssr`. Middleware refreshes the session and guards `/app/*`. Protected pages also call `getUser()` (never trust client-only session state).
+Cookie session via `@supabase/ssr`. Middleware refreshes the session and guards `/platform/*` and `/school/*`. Protected pages also call `getUser()` (never trust client-only session state).
 
-| Route                   | Purpose                                                  |
-| ----------------------- | -------------------------------------------------------- |
-| `/auth/sign-in`         | Email/password sign-in (shared; Superadmin and org admin) |
-| `/auth/sign-up`         | Account + `profiles` bootstrap (no org yet)              |
-| `/auth/forgot-password` | Password reset email (Mailpit locally)                   |
-| `/auth/update-password` | Set new password after recovery callback                 |
-| `/auth/callback`        | PKCE code exchange; then redirects to a safe `next` path |
-| `/app`                  | Organization workspace (owner/admin and staff)           |
-| `/platform`             | Platform operator (Superadmin) console                   |
-| `/platform/organizations` | List/create tenants and assign org admins              |
+| Lane | Routes | Purpose |
+| --- | --- | --- |
+| Public | `/`, `/features`, `/pricing`, `/demo`, `/register-school`, `/contact`, `/privacy`, `/terms` | Marketing / registration entry |
+| Auth | `/auth/sign-in`, `/auth/sign-up`, `/auth/forgot-password`, `/auth/update-password`, `/auth/callback`, `/auth/accept-school-invite` | Session lifecycle |
+| Platform admin | `/platform`, `/platform/requests`, `/platform/schools`, `/platform/operators` | Active `platform_operators` only |
+| School admin | `/school` | Active `school_memberships` |
+
+Legacy URLs `/app/*`, `/platform/organizations*`, and `/auth/accept-invite` redirect to the lanes above.
 
 Local redirects are already allow-listed in `supabase/config.toml` (`site_url` + `additional_redirect_urls`). Hosted Auth URL config: [`../../docs/09-vercel-preview-runbook.md`](../../docs/09-vercel-preview-runbook.md).
 
@@ -112,19 +111,40 @@ Platform operators are **not** organization members. They are rows in `platform_
 
 | URL | Who |
 | --- | --- |
-| `/auth/sign-in` | Superadmin login (same form as org users) |
-| `/platform` | Superadmin dashboard (stats + recent orgs) |
-| `/platform/organizations` | All organizations |
-| `/platform/organizations/new` | Create org + assign/create org admin |
+| `/auth/sign-in` | Superadmin login (same form as school/org users) |
+| `/platform` | Superadmin dashboard (schools + requests) |
+| `/platform/requests` | School application queue / approve (controlled RPCs) |
+| `/platform/schools` | Provisioned school tenants (idempotent create path) |
+| `/auth/accept-school-invite` | Accept school owner/staff invitation by token |
+| `/school` | School portal landing (active membership required) |
+| `/platform/bootstrap` | First-operator bootstrap (disabled after any active operator) |
+| `/platform/unauthorized` | Signed-in users without active operator access |
+| `/platform/operators` | List / suspend / revoke operators (audited) |
 
-After sign-in, active operators are redirected to `/platform`. Organization admins land on `/app` and cannot access `/platform` (server redirect). Operators do not automatically receive tenant academic/student access via RLS.
+Legacy `/platform/organizations*` routes redirect to schools/requests. New tenancy is school-based.
 
-**Local bootstrap** (after signing up the operator account):
+After sign-in, active operators are redirected to `/platform`. Non-operators who hit `/platform/*` are sent to `/platform/unauthorized` (middleware + page guards). Public sign-up never grants platform privileges. Suspended/revoked operators fail `is_platform_operator()` and cannot call privileged RPCs.
+
+**First-operator bootstrap** (only while no active operator exists):
+
+Browser bootstrap is **secret-gated** and disabled unless `PLATFORM_BOOTSTRAP_SECRET` is set in server env. Prefer the script:
 
 ```bash
-# repo root — local Supabase must be running
+# repo root — local Supabase must be running; Auth user must already exist
 ./scripts/bootstrap-platform-operator.sh your-operator@example.test
 ```
+
+Optional browser path (not public signup): set `PLATFORM_BOOTSTRAP_SECRET` in `.env.local`, sign in, open `/platform/bootstrap`, enter the same secret. The database permanently rejects bootstrap once any active operator exists.
+
+### Route lanes
+
+| Lane | Examples |
+| --- | --- |
+| Public | `/`, `/features`, `/pricing`, `/register-school`, … |
+| Platform admin | `/platform`, `/platform/requests`, `/platform/schools`, `/platform/operators` |
+| School admin | `/school`, `/auth/accept-school-invite` |
+
+Legacy `/app/*` and `/platform/organizations*` redirect to the school/platform lanes.
 
 Creating an organization as Superadmin requires `SUPABASE_SECRET_KEY` in `apps/web/.env.local` (service role) so new Auth users can be created when the admin email is new.
 

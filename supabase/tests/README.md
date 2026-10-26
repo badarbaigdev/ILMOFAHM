@@ -40,5 +40,14 @@ supabase test db
 | ILM-ACA-002 | `database/school_structure.test.sql` — grades/sections/subjects; academy-only denied |
 | ILM-ACA-003 | `database/academy_structure.test.sql` — courses/cohorts; school-only denied |
 | Platform operator | `database/platform_operators.test.sql` — Superadmin provision allow/deny; org admin cannot use platform RPCs |
+| Phase 2 school onboarding | `database/school_onboarding_foundation.test.sql` — anon apply, cross-school deny, operator review, invitation scope, privilege strip |
+| Phase 3 operator bootstrap | `database/platform_operator_bootstrap.test.sql` — one-shot bootstrap, deny self-promote, suspend/revoke, last-active guard, audit |
+| Phase 4 school applications | `database/school_application_submit.test.sql` — anon pending insert, privilege strip, duplicate deny, sanitized audit |
+| Phase 5 application review | `database/school_application_review.test.sql` — transition rules, review/approve RPCs, authz deny, idempotent provision, audit |
+| Phase 6 school provisioning | `database/school_provisioning.test.sql` — dedicated provision RPC, retry idempotency, heal incomplete, authz deny |
+| Phase 7 school invitations | `database/school_invitation_accept.test.sql` — accept allow/deny, email match, single-use, membership scope |
+| Phase 8 school setup | `database/school_setup.test.sql` — profile/branding/locale/campus/holiday RPCs, lifecycle protection, complete setup, audit |
+| Phase 9 manual subscriptions | `database/manual_subscriptions.test.sql` — plans read, assign/deny, payment idempotency/void, audit |
+| Phase 10 school staff membership | `database/school_staff_membership.test.sql` — invite/revoke/status/role allow-deny, cross-school, self-lockout |
 
 Do not claim tenant isolation for later modules until matching deny tests exist for those tables too.

@@ -6,11 +6,10 @@ import { isActivePlatformOperator } from "@/features/platform/operator/authorize
 import { brand } from "@/lib/brand";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
-const plannedAreas = [
-  { id: "students", label: "Students" },
-  { id: "attendance", label: "Attendance" },
-  { id: "fees", label: "Fees" },
-  { id: "examinations", label: "Examinations" },
+const publicLinks = [
+  { href: "/features", label: "Features" },
+  { href: "/pricing", label: "Pricing" },
+  { href: "/register-school", label: "Register school" },
 ] as const;
 
 type AppShellProps = {
@@ -41,11 +40,7 @@ export async function AppShell({ children }: AppShellProps) {
     isPlatformOperator = false;
   }
 
-  const homeHref = user
-    ? isPlatformOperator
-      ? "/platform"
-      : "/app"
-    : "/";
+  const homeHref = user ? (isPlatformOperator ? "/platform" : "/school") : "/";
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -71,25 +66,19 @@ export async function AppShell({ children }: AppShellProps) {
             {user ? (
               <SignedInNav isPlatformOperator={isPlatformOperator} />
             ) : (
-              <nav aria-label="Planned modules" className="min-w-0">
+              <nav aria-label="Public site" className="min-w-0">
                 <ul className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-muted">
-                  {plannedAreas.map((area) => (
-                    <li key={area.id}>
-                      <span
-                        className="inline-flex items-center gap-2 rounded-sm px-1 py-0.5"
-                        title="Not implemented yet"
+                  {publicLinks.map((item) => (
+                    <li key={item.href}>
+                      <Link
+                        href={item.href}
+                        className="underline-offset-2 hover:text-ink hover:underline"
                       >
-                        <span>{area.label}</span>
-                        <span className="text-xs tracking-wide text-muted/80 uppercase">
-                          Soon
-                        </span>
-                      </span>
+                        {item.label}
+                      </Link>
                     </li>
                   ))}
                 </ul>
-                <p className="sr-only">
-                  Module areas are placeholders and are not available yet.
-                </p>
               </nav>
             )}
 

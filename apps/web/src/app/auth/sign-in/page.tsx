@@ -28,7 +28,14 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
           Forgot password?
         </Link>
         {" · "}
-        <Link href="/auth/sign-up" className="text-ink-soft underline">
+        <Link
+          href={
+            nextPath && nextPath !== "/school"
+              ? `/auth/sign-up?next=${encodeURIComponent(nextPath)}`
+              : "/auth/sign-up"
+          }
+          className="text-ink-soft underline"
+        >
           Create an account
         </Link>
       </p>

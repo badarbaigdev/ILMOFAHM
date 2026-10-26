@@ -11,7 +11,8 @@ coverage/
 .turbo/
 **/*.tsbuildinfo
 
-# Environment files and secrets (commit examples only)
+# Environment files and secrets — never commit real values.
+# Only empty templates (*.example / *.sample / *.template) may be tracked.
 .env
 .env.*
 !.env.example
@@ -22,6 +23,17 @@ coverage/
 !**/.env.example
 !**/.env.sample
 !**/.env.template
+
+# Explicit local / deploy env copies (defense in depth; covered by .env.* above)
+apps/web/.env.local
+apps/web/.env.develop
+apps/web/.env.example
+apps/web/.env.staging
+apps/web/.env.production
+**/.env.local
+**/.env.develop
+**/.env.staging
+**/.env.production
 
 # Private keys / credentials that must never be committed
 *.pem

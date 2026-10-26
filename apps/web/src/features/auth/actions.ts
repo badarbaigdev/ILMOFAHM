@@ -73,10 +73,10 @@ export async function signInAction(
     ? safeAuthNextPath(requestedNext, fallback)
     : fallback;
 
-  // Default workspace home: operators land on the platform console.
+  // Default home: operators land on the platform console.
   if (
     isOperator &&
-    (next === "/app" || next === "/app/" || !requestedNext)
+    (next === "/school" || next === "/school/" || !requestedNext)
   ) {
     redirect("/platform");
   }
@@ -97,6 +97,9 @@ export async function signUpAction(
   }
 
   const fullName = String(formData.get("full_name") ?? "").trim();
+  const requestedNext = String(formData.get("next") ?? "").trim();
+  // Default after plain signup: school portal (empty until invite) — never implies admin.
+  const nextPath = safeAuthNextPath(requestedNext, "/school");
   const { appUrl } = getServerEnv();
   const supabase = await createServerSupabaseClient();
 
@@ -104,7 +107,7 @@ export async function signUpAction(
     email: parsed.email,
     password: parsed.password,
     options: {
-      emailRedirectTo: buildAuthCallbackUrl(appUrl, "/app"),
+      emailRedirectTo: buildAuthCallbackUrl(appUrl, nextPath),
       data: {
         full_name: fullName || undefined,
       },
@@ -112,8 +115,48 @@ export async function signUpAction(
   });
 
   if (error) {
+    const raw = error.message ?? "";
+    const msg = raw.toLowerCase();
+    if (
+      msg.includes("confirmation") ||
+      msg.includes("sending") ||
+      msg.includes("smtp") ||
+      msg.includes("error sending")
+    ) {
+      return {
+        error:
+          "Signup failed while sending the confirmation email. For develop, turn off Authentication → Providers → Email → Confirm email in the Supabase dashboard, then try again.",
+        success: null,
+      };
+    }
+    if (
+      msg.includes("invalid") ||
+      msg.includes("email address") ||
+      msg.includes("not allowed") ||
+      msg.includes("is invalid")
+    ) {
+      return {
+        error:
+          "That email address cannot be used for signup (reserved or invalid domain). Use a normal email — not example.com / .test addresses.",
+        success: null,
+      };
+    }
+    if (msg.includes("already") || msg.includes("registered")) {
+      return {
+        error: "An account with that email already exists. Sign in instead.",
+        success: null,
+      };
+    }
+    if (msg.includes("rate limit") || msg.includes("over_email")) {
+      return {
+        error: "Too many signup attempts. Wait a minute and try again.",
+        success: null,
+      };
+    }
     return {
-      error: "Could not create the account. Try a different email.",
+      error: raw
+        ? `Could not create the account: ${raw}`
+        : "Could not create the account. Try a different email.",
       success: null,
     };
   }
@@ -123,13 +166,13 @@ export async function signUpAction(
     if (!profile.ok) {
       return { error: profile.message, success: null };
     }
-    redirect("/app");
+    redirect(nextPath);
   }
 
   return {
     error: null,
     success:
-      "Account created. Check your email to confirm the address if confirmation is required, then sign in.",
+      "Account created. Sign in to continue. School access requires an invitation; platform admin is never granted by signup.",
   };
 }
 
@@ -204,13 +247,18 @@ export async function updatePasswordAction(
     };
   }
 
-  const { error } = await supabase.auth.updateUser({ password });
+  const { error } = await supabase.auth.updateUser({
+    password,
+    data: { must_set_password: false },
+  });
   if (error) {
     return {
-      error: "Could not update the password. Request a new reset link.",
+      error:
+        error.message ||
+        "Could not update the password. Try again or request a reset link.",
       success: null,
     };
   }
 
-  redirect("/app");
+  redirect("/school");
 }

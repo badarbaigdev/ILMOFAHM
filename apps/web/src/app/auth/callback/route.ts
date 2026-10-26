@@ -1,10 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { ensureProfileForUser } from "@/features/auth/ensure-profile";
-import {
-  defaultPostAuthPath,
-  safeAuthNextPath,
-} from "@/features/auth/paths";
+import { defaultPostAuthPath, safeAuthNextPath } from "@/features/auth/paths";
 import { isActivePlatformOperator } from "@/features/platform/operator/authorize-platform";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
@@ -40,7 +37,7 @@ export async function GET(request: Request) {
   let next = safeAuthNextPath(requestedNext, fallback);
   if (
     isOperator &&
-    (next === "/app" || next === "/app/" || !requestedNext)
+    (next === "/school" || next === "/school/" || !requestedNext)
   ) {
     next = "/platform";
   }

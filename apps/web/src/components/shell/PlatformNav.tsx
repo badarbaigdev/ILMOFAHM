@@ -3,30 +3,21 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const PLATFORM_LINKS = [
-  {
-    href: "/platform",
-    label: "Dashboard",
-    match: (path: string) => path === "/platform",
-  },
-  {
-    href: "/platform/organizations",
-    label: "Organizations",
-    match: (path: string) => path.startsWith("/platform/organizations"),
-  },
-] as const;
+import { isConsoleNavActive } from "@/components/shell/ConsoleShell";
+import { PLATFORM_CONSOLE_NAV } from "@/components/shell/console-nav";
 
 /**
- * Navigation for the platform operator (Superadmin) console.
+ * Compact platform nav (legacy AppShell). Prefer ConsoleShell sidebar in /platform.
  */
 export function PlatformNav() {
   const pathname = usePathname() ?? "/platform";
+  const items = PLATFORM_CONSOLE_NAV.flatMap((g) => g.items);
 
   return (
     <nav aria-label="Platform console" className="min-w-0">
       <ul className="flex flex-wrap items-center gap-x-1 gap-y-1 text-sm">
-        {PLATFORM_LINKS.map((link) => {
-          const active = link.match(pathname);
+        {items.map((link) => {
+          const active = isConsoleNavActive(pathname, link);
           return (
             <li key={link.href}>
               <Link

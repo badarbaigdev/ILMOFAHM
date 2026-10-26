@@ -31,9 +31,7 @@ export async function listCourses(
 ): Promise<CourseRow[]> {
   const { data, error } = await supabase
     .from("courses")
-    .select(
-      "id, organization_id, campus_id, name, code, description, status",
-    )
+    .select("id, organization_id, campus_id, name, code, description, status")
     .eq("organization_id", organizationId)
     .order("name", { ascending: true });
 

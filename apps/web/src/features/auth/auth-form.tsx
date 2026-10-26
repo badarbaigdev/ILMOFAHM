@@ -18,6 +18,8 @@ type Field = {
   type: string;
   autoComplete?: string;
   required?: boolean;
+  defaultValue?: string;
+  readOnly?: boolean;
 };
 
 function AuthFormShell({
@@ -74,7 +76,9 @@ function AuthFormShell({
               type={field.type}
               autoComplete={field.autoComplete}
               required={field.required !== false}
-              className="w-full rounded-md border border-line bg-paper-elevated px-3 py-2 text-ink outline-none focus-visible:border-teal"
+              defaultValue={field.defaultValue}
+              readOnly={field.readOnly}
+              className="w-full rounded-md border border-line bg-paper-elevated px-3 py-2 text-ink outline-none focus-visible:border-teal read-only:bg-paper read-only:text-muted"
             />
           </div>
         ))}
@@ -128,13 +132,25 @@ export function SignInForm({ nextPath }: { nextPath: string }) {
   );
 }
 
-export function SignUpForm() {
+export function SignUpForm({
+  nextPath = "/school",
+  invitedEmail,
+}: {
+  nextPath?: string;
+  invitedEmail?: string | null;
+}) {
+  const lockedEmail = invitedEmail?.trim().toLowerCase() || null;
   return (
     <AuthFormShell
       title="Create account"
-      description="Registers an Auth user and profile only. Organization onboarding comes in a later milestone."
+      description={
+        lockedEmail
+          ? `Use ${lockedEmail} — this activation link only works for that address.`
+          : "Creates a login only — not platform admin and not school admin. School access requires an invitation. Platform admin is granted only by an existing operator (or a secret-gated local bootstrap)."
+      }
       action={signUpAction}
       submitLabel="Create account"
+      hiddenFields={{ next: nextPath }}
       fields={[
         {
           name: "full_name",
@@ -148,6 +164,8 @@ export function SignUpForm() {
           label: "Email",
           type: "email",
           autoComplete: "email",
+          defaultValue: lockedEmail ?? undefined,
+          readOnly: Boolean(lockedEmail),
         },
         {
           name: "password",
@@ -182,10 +200,10 @@ export function ForgotPasswordForm() {
 export function UpdatePasswordForm() {
   return (
     <AuthFormShell
-      title="Choose a new password"
-      description="Set a new password for your signed-in recovery session."
+      title="Choose a password"
+      description="Set a password so you can sign in again later. You can change it anytime from this page while signed in."
       action={updatePasswordAction}
-      submitLabel="Update password"
+      submitLabel="Save password"
       fields={[
         {
           name: "password",

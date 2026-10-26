@@ -51,6 +51,54 @@ export async function listPlatformOrganizations(
   );
 }
 
+export type PlatformOperatorRow = {
+  userId: string;
+  role: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  fullName: string | null;
+};
+
+export async function listPlatformOperators(
+  supabase: SupabaseClient,
+): Promise<PlatformOperatorRow[]> {
+  const { data, error } = await supabase
+    .from("platform_operators")
+    .select("user_id, role, status, created_at, updated_at, profiles(full_name)")
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    throw new Error("Could not load platform operators.");
+  }
+
+  return (data ?? []).map(
+    (row: {
+      user_id: string;
+      role: string;
+      status: string;
+      created_at: string;
+      updated_at: string;
+      profiles:
+        | { full_name: string | null }
+        | { full_name: string | null }[]
+        | null;
+    }) => {
+      const profile = Array.isArray(row.profiles)
+        ? row.profiles[0]
+        : row.profiles;
+      return {
+        userId: row.user_id,
+        role: row.role,
+        status: row.status,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        fullName: profile?.full_name ?? null,
+      };
+    },
+  );
+}
+
 export async function getPlatformDashboardStats(
   supabase: SupabaseClient,
 ): Promise<PlatformDashboardStats> {

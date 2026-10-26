@@ -13,16 +13,10 @@ export type CohortInput = {
 };
 
 export type ValidateResult<T> =
-  | { ok: true; value: T }
-  | { ok: false; error: string };
+  { ok: true; value: T } | { ok: false; error: string };
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-const COHORT_STATUSES = [
-  "planned",
-  "active",
-  "completed",
-  "archived",
-] as const;
+const COHORT_STATUSES = ["planned", "active", "completed", "archived"] as const;
 
 export function validateCourseInput(raw: {
   name: string;
