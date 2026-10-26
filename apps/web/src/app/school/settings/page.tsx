@@ -17,19 +17,23 @@ import { getRequestSchoolSlug } from "@/lib/tenancy/request";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 const SETTINGS_SECTIONS = [
-  { id: "school-profile-heading", label: "Profile" },
-  { id: "school-branding-heading", label: "Branding" },
-  { id: "school-locale-heading", label: "Locale" },
-  { id: "school-campuses-heading", label: "Campuses" },
+  { id: "profile", label: "General", headingId: "school-profile-heading" },
+  { id: "branding", label: "Customize", headingId: "school-branding-heading" },
+  { id: "locale", label: "Localization", headingId: "school-locale-heading" },
+  { id: "campuses", label: "Campuses", headingId: "school-campuses-heading" },
 ] as const;
 
 type PageProps = {
-  searchParams: Promise<{ school?: string }>;
+  searchParams: Promise<{ school?: string; section?: string }>;
 };
 
 export default async function SchoolSettingsPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const requestedSchoolId = params.school?.trim() ?? "";
+  const sectionParam = params.section?.trim() ?? "profile";
+  const activeSection = SETTINGS_SECTIONS.some((s) => s.id === sectionParam)
+    ? sectionParam
+    : "profile";
   const hostSchoolSlug = await getRequestSchoolSlug();
   const supabase = await createServerSupabaseClient();
   const {
@@ -85,44 +89,74 @@ export default async function SchoolSettingsPage({ searchParams }: PageProps) {
     holidays = [];
   }
 
+  const schoolQuery = `school=${encodeURIComponent(active.school.id)}`;
+  const activeMeta =
+    SETTINGS_SECTIONS.find((s) => s.id === activeSection) ??
+    SETTINGS_SECTIONS[0];
+
   return (
     <main
       id="main-content"
       tabIndex={-1}
-      className="mx-auto w-full max-w-3xl px-6 py-16 outline-none sm:px-10"
+      className="mx-auto w-full max-w-4xl px-4 py-8 outline-none sm:px-6 lg:px-8"
     >
-      <p className="text-[0.65rem] font-semibold tracking-[0.2em] text-teal uppercase">
-        School portal
-      </p>
-      <h1 className="mt-2 font-display text-4xl tracking-tight text-ink">
-        Settings · {active.school.name}
-      </h1>
-      <p className="mt-3 text-muted">
-        Update school profile, branding, locale, and campuses after setup.
-      </p>
-      <div className="mt-4 text-sm">
+      <p className="text-sm text-muted">
         <Link
           href={`/school?school=${active.school.id}`}
           className="text-ink underline-offset-2 hover:underline"
         >
-          Back to school home
+          {active.school.name}
         </Link>
+        <span className="mx-1.5 text-line">/</span>
+        Settings
+      </p>
+      <h1 className="mt-3 text-2xl font-semibold tracking-tight text-ink">
+        Settings
+      </h1>
+      <p className="mt-2 text-sm text-muted">
+        Update school profile, branding, locale, and campuses after setup.
+      </p>
+
+      <PageSectionNav
+        label="Settings sections"
+        variant="pill"
+        activeId={activeSection}
+        sections={SETTINGS_SECTIONS.map((s) => ({
+          id: s.id,
+          label: s.label,
+        }))}
+        hrefFor={(id) => `/school/settings?${schoolQuery}&section=${id}`}
+      />
+
+      <div className="mt-8">
+        <h2 className="text-lg font-semibold text-ink">{activeMeta.label}</h2>
+        {activeSection === "profile" ? (
+          <SchoolProfilePanel
+            school={active.school}
+            canManage={active.canManage}
+          />
+        ) : null}
+        {activeSection === "branding" ? (
+          <SchoolBrandingPanel
+            school={active.school}
+            canManage={active.canManage}
+          />
+        ) : null}
+        {activeSection === "locale" ? (
+          <SchoolLocalePanel
+            school={active.school}
+            holidays={holidays}
+            canManage={active.canManage}
+          />
+        ) : null}
+        {activeSection === "campuses" ? (
+          <SchoolCampusesPanel
+            schoolId={active.school.id}
+            campuses={active.campuses}
+            canManage={active.canManage}
+          />
+        ) : null}
       </div>
-
-      <PageSectionNav sections={[...SETTINGS_SECTIONS]} />
-
-      <SchoolProfilePanel school={active.school} canManage={active.canManage} />
-      <SchoolBrandingPanel school={active.school} canManage={active.canManage} />
-      <SchoolLocalePanel
-        school={active.school}
-        holidays={holidays}
-        canManage={active.canManage}
-      />
-      <SchoolCampusesPanel
-        schoolId={active.school.id}
-        campuses={active.campuses}
-        canManage={active.canManage}
-      />
     </main>
   );
 }

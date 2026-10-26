@@ -3,6 +3,12 @@
 import { useActionState } from "react";
 
 import {
+  DialogField,
+  DialogSelect,
+  FormDialog,
+} from "@/components/ui/dialog";
+import { useActionDialog } from "@/components/ui/use-action-dialog";
+import {
   assignSchoolSubscriptionAction,
   recordSubscriptionPaymentAction,
   setSubscriptionStatusAction,
@@ -13,25 +19,13 @@ import type {
   SubscriptionPaymentRow,
   SubscriptionPlanRow,
 } from "@/features/platform/subscriptions/queries";
+import {
+  SchoolDataTable,
+  StatusBadge,
+  formatListDate,
+} from "@/features/schools/ui/data-table";
 
 const initial: SubscriptionActionState = { error: null, success: null };
-
-function Feedback({ state }: { state: SubscriptionActionState }) {
-  return (
-    <>
-      {state.error ? (
-        <p role="alert" className="text-sm text-red-700">
-          {state.error}
-        </p>
-      ) : null}
-      {state.success ? (
-        <p role="status" className="text-sm text-teal">
-          {state.success}
-        </p>
-      ) : null}
-    </>
-  );
-}
 
 export function AssignSubscriptionForm({
   schools,
@@ -44,81 +38,76 @@ export function AssignSubscriptionForm({
     assignSchoolSubscriptionAction,
     initial,
   );
+  const dialog = useActionDialog(state);
 
   return (
-    <form action={action} className="mt-6 max-w-lg space-y-4" noValidate>
-      <div className="space-y-1.5">
-        <label htmlFor="school_id" className="block text-sm font-medium text-ink">
-          School
-        </label>
-        <select
+    <>
+      <button
+        type="button"
+        onClick={dialog.openDialog}
+        className="rounded-md bg-teal px-4 py-2 text-sm font-medium text-white"
+      >
+        + Assign subscription
+      </button>
+      <FormDialog
+        open={dialog.open}
+        onClose={dialog.closeDialog}
+        title="Assign or replace subscription"
+        description="Creates a new current subscription and marks any previous current row as historical."
+        submitLabel="Assign subscription"
+        formAction={action}
+        busy={pending}
+        dirty={dialog.dirty}
+        onDirtyChange={dialog.setDirty}
+        error={state.error}
+      >
+        <DialogSelect
           id="school_id"
           name="school_id"
+          label="School"
           required
-          className="w-full rounded-md border border-line bg-paper-elevated px-3 py-2 text-ink outline-none focus-visible:border-teal"
-        >
-          <option value="">Select school</option>
-          {schools.map((school) => (
-            <option key={school.id} value={school.id}>
-              {school.name}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className="space-y-1.5">
-        <label htmlFor="plan_id" className="block text-sm font-medium text-ink">
-          Plan
-        </label>
-        <select
+          disabled={schools.length === 0}
+          options={schools.map((s) => ({ value: s.id, label: s.name }))}
+        />
+        <DialogSelect
           id="plan_id"
           name="plan_id"
+          label="Plan"
           required
-          className="w-full rounded-md border border-line bg-paper-elevated px-3 py-2 text-ink outline-none focus-visible:border-teal"
-        >
-          {plans
+          options={plans
             .filter((p) => p.isActive)
-            .map((plan) => (
-              <option key={plan.id} value={plan.id}>
-                {plan.name}
-              </option>
-            ))}
-        </select>
-      </div>
-      <div className="space-y-1.5">
-        <label htmlFor="status" className="block text-sm font-medium text-ink">
-          Status
-        </label>
-        <select
+            .map((p) => ({ value: p.id, label: p.name }))}
+        />
+        <DialogSelect
           id="status"
           name="status"
+          label="Status"
+          required
           defaultValue="active"
-          className="w-full rounded-md border border-line bg-paper-elevated px-3 py-2 text-ink outline-none focus-visible:border-teal"
-        >
-          <option value="trial">Trial</option>
-          <option value="active">Active</option>
-          <option value="past_due">Past due</option>
-          <option value="grace">Grace</option>
-          <option value="suspended">Suspended</option>
-          <option value="cancelled">Cancelled</option>
-          <option value="expired">Expired</option>
-        </select>
-      </div>
-      <Field label="Billing contact name" name="billing_contact_name" />
-      <Field
-        label="Billing contact email"
-        name="billing_contact_email"
-        type="email"
-      />
-      <Field label="Notes" name="notes" />
-      <Feedback state={state} />
-      <button
-        type="submit"
-        disabled={pending || schools.length === 0}
-        className="rounded-md bg-ink px-4 py-2 text-sm font-medium text-paper-elevated disabled:opacity-60"
-      >
-        {pending ? "Assigning…" : "Assign subscription"}
-      </button>
-    </form>
+          options={[
+            { value: "trial", label: "Trial" },
+            { value: "active", label: "Active" },
+            { value: "past_due", label: "Past due" },
+            { value: "grace", label: "Grace" },
+            { value: "suspended", label: "Suspended" },
+            { value: "cancelled", label: "Cancelled" },
+            { value: "expired", label: "Expired" },
+          ]}
+        />
+        <DialogField
+          id="billing_contact_name"
+          name="billing_contact_name"
+          label="Billing contact name"
+        />
+        <DialogField
+          id="billing_contact_email"
+          name="billing_contact_email"
+          label="Billing contact email"
+          type="email"
+        />
+        <DialogField id="notes" name="notes" label="Notes" />
+      </FormDialog>
+    </>
   );
 }
 
@@ -133,39 +122,49 @@ export function SetSubscriptionStatusForm({
     setSubscriptionStatusAction,
     initial,
   );
+  const dialog = useActionDialog(state);
 
   return (
-    <form action={action} className="mt-4 max-w-md space-y-3" noValidate>
-      <input type="hidden" name="subscription_id" value={subscriptionId} />
-      <div className="space-y-1.5">
-        <label htmlFor="status" className="block text-sm font-medium text-ink">
-          Status
-        </label>
-        <select
+    <>
+      <button
+        type="button"
+        onClick={dialog.openDialog}
+        className="rounded-md border border-line bg-paper-elevated px-4 py-2 text-sm font-medium text-ink"
+      >
+        Update status
+      </button>
+      <FormDialog
+        open={dialog.open}
+        onClose={dialog.closeDialog}
+        title="Update subscription status"
+        description={`Current status: ${currentStatus.replaceAll("_", " ")}.`}
+        submitLabel="Save status"
+        formAction={action}
+        busy={pending}
+        dirty={dialog.dirty}
+        onDirtyChange={dialog.setDirty}
+        error={state.error}
+      >
+        <input type="hidden" name="subscription_id" value={subscriptionId} />
+        <DialogSelect
           id="status"
           name="status"
+          label="Status"
+          required
           defaultValue={currentStatus}
-          className="w-full rounded-md border border-line bg-paper-elevated px-3 py-2 text-ink outline-none focus-visible:border-teal"
-        >
-          <option value="trial">Trial</option>
-          <option value="active">Active</option>
-          <option value="past_due">Past due</option>
-          <option value="grace">Grace</option>
-          <option value="suspended">Suspended</option>
-          <option value="cancelled">Cancelled</option>
-          <option value="expired">Expired</option>
-        </select>
-      </div>
-      <Field label="Notes" name="notes" />
-      <Feedback state={state} />
-      <button
-        type="submit"
-        disabled={pending}
-        className="rounded-md border border-line px-4 py-2 text-sm font-medium text-ink disabled:opacity-60"
-      >
-        {pending ? "Saving…" : "Update status"}
-      </button>
-    </form>
+          options={[
+            { value: "trial", label: "Trial" },
+            { value: "active", label: "Active" },
+            { value: "past_due", label: "Past due" },
+            { value: "grace", label: "Grace" },
+            { value: "suspended", label: "Suspended" },
+            { value: "cancelled", label: "Cancelled" },
+            { value: "expired", label: "Expired" },
+          ]}
+        />
+        <DialogField id="notes" name="notes" label="Notes" />
+      </FormDialog>
+    </>
   );
 }
 
@@ -178,46 +177,77 @@ export function RecordPaymentForm({
     recordSubscriptionPaymentAction,
     initial,
   );
+  const dialog = useActionDialog(state);
 
   return (
-    <form action={action} className="mt-4 max-w-lg space-y-3" noValidate>
-      <input type="hidden" name="subscription_id" value={subscriptionId} />
-      <Field label="Amount" name="amount" required />
-      <Field label="Currency" name="currency_code" defaultValue="PKR" />
-      <div className="space-y-1.5">
-        <label htmlFor="method" className="block text-sm font-medium text-ink">
-          Method
-        </label>
-        <select
+    <>
+      <button
+        type="button"
+        onClick={dialog.openDialog}
+        className="rounded-md bg-teal px-4 py-2 text-sm font-medium text-white"
+      >
+        + Record payment
+      </button>
+      <FormDialog
+        open={dialog.open}
+        onClose={dialog.closeDialog}
+        title="Record manual payment"
+        description="Record bank/cash/cheque receipts. No online gateway."
+        submitLabel="Record payment"
+        formAction={action}
+        busy={pending}
+        dirty={dialog.dirty}
+        onDirtyChange={dialog.setDirty}
+        error={state.error}
+      >
+        <input type="hidden" name="subscription_id" value={subscriptionId} />
+        <DialogField id="amount" name="amount" label="Amount" required />
+        <DialogField
+          id="currency_code"
+          name="currency_code"
+          label="Currency"
+          defaultValue="PKR"
+        />
+        <DialogSelect
           id="method"
           name="method"
+          label="Method"
+          required
           defaultValue="bank_transfer"
-          className="w-full rounded-md border border-line bg-paper-elevated px-3 py-2 text-ink outline-none focus-visible:border-teal"
-        >
-          <option value="bank_transfer">Bank transfer</option>
-          <option value="cash">Cash</option>
-          <option value="cheque">Cheque</option>
-          <option value="other">Other</option>
-        </select>
-      </div>
-      <Field label="Reference" name="reference" />
-      <Field label="Period start" name="period_start" type="date" />
-      <Field label="Period end" name="period_end" type="date" />
-      <Field label="Idempotency key" name="idempotency_key" />
-      <Field label="Notes" name="notes" />
-      <label className="inline-flex items-center gap-2 text-sm text-ink">
-        <input type="checkbox" name="confirm" defaultChecked />
-        Mark as confirmed
-      </label>
-      <Feedback state={state} />
-      <button
-        type="submit"
-        disabled={pending}
-        className="rounded-md bg-ink px-4 py-2 text-sm font-medium text-paper-elevated disabled:opacity-60"
-      >
-        {pending ? "Recording…" : "Record payment"}
-      </button>
-    </form>
+          options={[
+            { value: "bank_transfer", label: "Bank transfer" },
+            { value: "cash", label: "Cash" },
+            { value: "cheque", label: "Cheque" },
+            { value: "other", label: "Other" },
+          ]}
+        />
+        <DialogField id="reference" name="reference" label="Reference" />
+        <div className="grid grid-cols-2 gap-3">
+          <DialogField
+            id="period_start"
+            name="period_start"
+            label="Period start"
+            type="date"
+          />
+          <DialogField
+            id="period_end"
+            name="period_end"
+            label="Period end"
+            type="date"
+          />
+        </div>
+        <DialogField
+          id="idempotency_key"
+          name="idempotency_key"
+          label="Idempotency key"
+        />
+        <DialogField id="notes" name="notes" label="Notes" />
+        <label className="inline-flex items-center gap-2 text-sm text-ink">
+          <input type="checkbox" name="confirm" defaultChecked />
+          Mark as confirmed
+        </label>
+      </FormDialog>
+    </>
   );
 }
 
@@ -232,63 +262,117 @@ export function VoidPaymentForm({
     voidSubscriptionPaymentAction,
     initial,
   );
+  const dialog = useActionDialog(state);
 
   if (payment.status === "voided") {
     return (
-      <p className="text-xs text-muted">
+      <span className="text-xs text-muted">
         Voided{payment.voidReason ? `: ${payment.voidReason}` : ""}
-      </p>
+      </span>
     );
   }
 
   return (
-    <form action={action} className="mt-2 flex flex-wrap items-end gap-2">
-      <input type="hidden" name="payment_id" value={payment.id} />
-      <input type="hidden" name="subscription_id" value={subscriptionId} />
-      <input
-        name="void_reason"
-        required
-        placeholder="Void reason"
-        className="min-w-[12rem] flex-1 rounded-md border border-line bg-paper-elevated px-2 py-1.5 text-sm text-ink outline-none focus-visible:border-teal"
-      />
+    <>
       <button
-        type="submit"
-        disabled={pending}
-        className="text-sm text-ink underline-offset-2 hover:underline disabled:opacity-60"
+        type="button"
+        onClick={dialog.openDialog}
+        className="text-sm text-red-700 underline-offset-2 hover:underline"
       >
         Void
       </button>
-      <Feedback state={state} />
-    </form>
+      <FormDialog
+        open={dialog.open}
+        onClose={dialog.closeDialog}
+        title="Void payment"
+        description={`Void ${payment.amount.toFixed(2)} ${payment.currencyCode}? This cannot be undone.`}
+        submitLabel="Void payment"
+        formAction={action}
+        busy={pending}
+        dirty={dialog.dirty}
+        onDirtyChange={dialog.setDirty}
+        error={state.error}
+        tone="danger"
+      >
+        <input type="hidden" name="payment_id" value={payment.id} />
+        <input type="hidden" name="subscription_id" value={subscriptionId} />
+        <DialogField
+          id={`void-reason-${payment.id}`}
+          name="void_reason"
+          label="Void reason"
+          required
+        />
+      </FormDialog>
+    </>
   );
 }
 
-function Field({
-  label,
-  name,
-  type = "text",
-  required = false,
-  defaultValue = "",
+export function SubscriptionPaymentsTable({
+  payments,
+  subscriptionId,
 }: {
-  label: string;
-  name: string;
-  type?: string;
-  required?: boolean;
-  defaultValue?: string;
+  payments: SubscriptionPaymentRow[];
+  subscriptionId: string;
 }) {
   return (
-    <div className="space-y-1.5">
-      <label htmlFor={name} className="block text-sm font-medium text-ink">
-        {label}
-      </label>
-      <input
-        id={name}
-        name={name}
-        type={type}
-        required={required}
-        defaultValue={defaultValue}
-        className="w-full rounded-md border border-line bg-paper-elevated px-3 py-2 text-ink outline-none focus-visible:border-teal"
-      />
-    </div>
+    <SchoolDataTable
+      rows={payments}
+      rowKey={(row) => row.id}
+      searchPlaceholder="Search payments"
+      searchText={(row) =>
+        [
+          row.amount,
+          row.currencyCode,
+          row.method,
+          row.reference ?? "",
+          row.status,
+        ].join(" ")
+      }
+      emptyMessage="No payments recorded yet."
+      exportFileName="subscription-payments"
+      selectable={false}
+      columns={[
+        {
+          id: "amount",
+          header: "Amount",
+          cell: (row) => (
+            <span className="font-medium text-ink">
+              {row.amount.toFixed(2)} {row.currencyCode}
+            </span>
+          ),
+        },
+        {
+          id: "method",
+          header: "Method",
+          cell: (row) => (
+            <span className="capitalize">
+              {row.method.replaceAll("_", " ")}
+            </span>
+          ),
+        },
+        {
+          id: "reference",
+          header: "Reference",
+          cell: (row) => row.reference ?? "—",
+        },
+        {
+          id: "paid",
+          header: "Paid on",
+          cell: (row) => formatListDate(row.paidAt.slice(0, 10)),
+        },
+        {
+          id: "status",
+          header: "Status",
+          cell: (row) => <StatusBadge status={row.status} />,
+        },
+        {
+          id: "action",
+          header: "Action",
+          cell: (row) => (
+            <VoidPaymentForm payment={row} subscriptionId={subscriptionId} />
+          ),
+        },
+      ]}
+    />
   );
 }
