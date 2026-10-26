@@ -1,7 +1,22 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import {
+  DonutChart,
+  StatCard,
+  buildSlices,
+} from "@/features/platform/ui/dashboard-charts";
+import { listSchoolAcademicYears } from "@/features/schools/academic/queries";
+import { listSchoolAttendanceSessions } from "@/features/schools/attendance/queries";
 import { loadSchoolContext } from "@/features/schools/context";
+import { listSchoolFeeCharges } from "@/features/schools/fees/queries";
+import { summarizeFeeCharges } from "@/features/schools/fees/summary";
+import { listSchoolTeachers } from "@/features/schools/teachers/queries";
+import {
+  listSchoolEnrolments,
+  listSchoolStudents,
+} from "@/features/schools/students/queries";
+import { StatusBadge } from "@/features/schools/ui/data-table";
 import { getRequestSchoolSlug } from "@/lib/tenancy/request";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
@@ -44,7 +59,7 @@ export default async function SchoolPortalPage({ searchParams }: PageProps) {
         tabIndex={-1}
         className="mx-auto w-full max-w-2xl px-6 py-16 outline-none sm:px-10"
       >
-        <h1 className="font-display text-3xl tracking-tight text-ink">
+        <h1 className="text-2xl font-semibold tracking-tight text-ink">
           School portal
         </h1>
         <p role="alert" className="mt-4 text-sm text-red-700">
@@ -61,13 +76,12 @@ export default async function SchoolPortalPage({ searchParams }: PageProps) {
         tabIndex={-1}
         className="mx-auto w-full max-w-2xl px-6 py-16 outline-none sm:px-10"
       >
-        <h1 className="font-display text-3xl tracking-tight text-ink">
+        <h1 className="text-2xl font-semibold tracking-tight text-ink">
           School portal
         </h1>
         <p className="mt-4 text-sm text-muted">
-          You are signed in, but this account is not a school admin yet. School
-          access comes only from accepting a school invitation after a platform
-          operator approves a registration.
+          You are signed in, but this account is not a school admin yet. Accept a
+          school invitation after platform approval to get access.
         </p>
         <p className="mt-6 text-sm">
           <Link
@@ -87,101 +101,166 @@ export default async function SchoolPortalPage({ searchParams }: PageProps) {
     redirect(`/school/setup?school=${active.school.id}`);
   }
 
+  const schoolId = active.school.id;
+  const q = `school=${schoolId}`;
+
+  let studentCount = 0;
+  let teacherCount = 0;
+  let enrolmentCount = 0;
+  let yearCount = 0;
+  let feeSummary = { collected: "0", due: "0", overdue: "0" };
+  let attendanceOpen = 0;
+  let studentStatus: Record<string, number> = {};
+
+  try {
+    const [students, teachers, enrolments, years, charges, sessions] =
+      await Promise.all([
+        listSchoolStudents(supabase, schoolId),
+        listSchoolTeachers(supabase, schoolId),
+        listSchoolEnrolments(supabase, schoolId),
+        listSchoolAcademicYears(supabase, schoolId),
+        listSchoolFeeCharges(supabase, schoolId).catch(() => []),
+        listSchoolAttendanceSessions(supabase, schoolId).catch(() => []),
+      ]);
+    studentCount = students.length;
+    teacherCount = teachers.filter((t) => t.status === "active").length;
+    enrolmentCount = enrolments.filter((e) => e.status === "enrolled").length;
+    yearCount = years.length;
+    feeSummary = summarizeFeeCharges(charges);
+    attendanceOpen = sessions.filter((s) => s.status === "draft").length;
+    studentStatus = students.reduce<Record<string, number>>((acc, s) => {
+      acc[s.status] = (acc[s.status] ?? 0) + 1;
+      return acc;
+    }, {});
+  } catch {
+    // Dashboard still renders with zeros when a module query fails.
+  }
+
+  const formatMoney = (amount: string) => {
+    const n = Number(amount);
+    if (!Number.isFinite(n)) return amount;
+    return `₨ ${n.toLocaleString("en-PK", { maximumFractionDigits: 0 })}`;
+  };
+
+  const shortcuts = [
+    { href: `/school/students?${q}`, label: "Students", hint: `${studentCount}` },
+    { href: `/school/teachers?${q}`, label: "Teachers", hint: `${teacherCount}` },
+    { href: `/school/attendance?${q}`, label: "Attendance", hint: attendanceOpen ? `${attendanceOpen} draft` : "Open" },
+    { href: `/school/fees?${q}`, label: "Fees", hint: formatMoney(feeSummary.due) },
+    { href: `/school/academic?${q}`, label: "Classes", hint: `${yearCount} year${yearCount === 1 ? "" : "s"}` },
+    { href: `/school/guardians?${q}`, label: "Guardians", hint: "Contacts" },
+    { href: `/school/members?${q}`, label: "Staff", hint: "Roles" },
+    { href: `/school/settings?${q}`, label: "Settings", hint: "School" },
+  ];
+
   return (
     <main
       id="main-content"
       tabIndex={-1}
-      className="mx-auto w-full max-w-5xl px-6 py-10 outline-none sm:px-8"
+      className="mx-auto w-full max-w-6xl px-4 py-8 outline-none sm:px-6 lg:px-8"
     >
-      <p className="text-[0.65rem] font-semibold tracking-[0.2em] text-teal uppercase">
-        Dashboard
-      </p>
-      <h1 className="mt-2 text-3xl font-semibold tracking-tight text-ink">
-        {active.school.name}
-      </h1>
-      <p className="mt-3 text-muted">
-        {active.needsSetup
-          ? "Setup is still incomplete. Ask a school owner or admin to finish setup."
-          : "Your membership is active. Use settings to manage school configuration."}
-      </p>
-      <dl className="mt-8 grid gap-4 text-sm sm:grid-cols-2">
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <dt className="text-xs tracking-wide text-muted uppercase">Status</dt>
-          <dd className="mt-1 text-ink">
-            {active.school.status.replaceAll("_", " ")}
-          </dd>
+          <p className="text-[0.65rem] font-semibold tracking-[0.2em] text-teal uppercase">
+            Dashboard
+          </p>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-ink">
+            {active.school.name}
+          </h1>
+          <p className="mt-1 text-sm text-muted">
+            <StatusBadge status={active.school.status} />
+            <span className="mx-2 text-line">·</span>
+            {active.membership.role}
+          </p>
         </div>
-        <div>
-          <dt className="text-xs tracking-wide text-muted uppercase">Role</dt>
-          <dd className="mt-1 text-ink">{active.membership.role}</dd>
-        </div>
-        <div>
-          <dt className="text-xs tracking-wide text-muted uppercase">Campuses</dt>
-          <dd className="mt-1 text-ink">
-            {active.campuses.filter((c) => c.status === "active").length} active
-          </dd>
-        </div>
-        {active.school.setupCompletedAt ? (
-          <div>
-            <dt className="text-xs tracking-wide text-muted uppercase">
-              Setup completed
-            </dt>
-            <dd className="mt-1 text-ink">
-              {new Date(active.school.setupCompletedAt).toLocaleDateString()}
-            </dd>
-          </div>
-        ) : null}
-      </dl>
-
-      <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {[
-          { href: `/school/students?school=${active.school.id}`, label: "Students", hint: "Records & CSV import" },
-          { href: `/school/teachers?school=${active.school.id}`, label: "Teachers", hint: "HR directory" },
-          { href: `/school/guardians?school=${active.school.id}`, label: "Guardians", hint: "Contacts & links" },
-          { href: `/school/academic?school=${active.school.id}`, label: "Classes", hint: "Years, grades, sections" },
-          { href: `/school/attendance?school=${active.school.id}`, label: "Attendance", hint: "Daily section marks" },
-          { href: `/school/fees?school=${active.school.id}`, label: "Fees", hint: "Heads, charges & receipts" },
-          { href: `/school/members?school=${active.school.id}`, label: "Staff & roles", hint: "Invites & access" },
-          { href: `/school/settings?school=${active.school.id}`, label: "Settings", hint: "Profile & campuses" },
-          ...(active.canManage
-            ? [
-                {
-                  href: `/school/setup?school=${active.school.id}`,
-                  label: "Setup",
-                  hint: "Activation checklist",
-                },
-              ]
-            : []),
-        ].map((card) => (
-          <Link
-            key={card.href}
-            href={card.href}
-            className="rounded-xl border border-line bg-paper-elevated p-4 no-underline transition hover:border-teal/40"
-          >
-            <p className="font-medium text-ink">{card.label}</p>
-            <p className="mt-1 text-xs text-muted">{card.hint}</p>
-          </Link>
-        ))}
+        <Link
+          href={`/school/students?${q}`}
+          className="rounded-md bg-teal px-3 py-2 text-sm font-medium text-white no-underline"
+        >
+          Open students
+        </Link>
       </div>
 
+      <section
+        aria-label="Key metrics"
+        className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
+      >
+        <StatCard
+          label="Students"
+          value={studentCount}
+          hint={`${enrolmentCount} enrolled`}
+          href={`/school/students?${q}`}
+          tone="info"
+        />
+        <StatCard
+          label="Teachers"
+          value={teacherCount}
+          hint="Active staff"
+          href={`/school/teachers?${q}`}
+        />
+        <StatCard
+          label="Fees due"
+          value={formatMoney(feeSummary.due)}
+          hint={`Collected ${formatMoney(feeSummary.collected)}`}
+          href={`/school/fees?${q}`}
+          tone={Number(feeSummary.due) > 0 ? "warn" : "ok"}
+        />
+        <StatCard
+          label="Draft attendance"
+          value={attendanceOpen}
+          hint="Sessions to submit"
+          href={`/school/attendance?${q}`}
+          tone={attendanceOpen > 0 ? "warn" : "default"}
+        />
+      </section>
+
+      <section className="mt-4 grid gap-4 lg:grid-cols-3">
+        <DonutChart
+          title="Student status"
+          slices={buildSlices(
+            Object.entries(studentStatus).map(([status, value]) => ({
+              id: status,
+              label: status,
+              value,
+            })),
+          )}
+          centerLabel="Students"
+          emptyLabel="Add students to see the mix."
+        />
+
+        <section className="rounded-2xl border border-line bg-paper-elevated p-5 lg:col-span-2">
+          <h2 className="text-sm font-semibold text-ink">Quick links</h2>
+          <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            {shortcuts.map((card) => (
+              <Link
+                key={card.href}
+                href={card.href}
+                className="rounded-xl border border-line bg-paper px-3 py-3 no-underline transition hover:border-teal/40"
+              >
+                <p className="text-sm font-medium text-ink">{card.label}</p>
+                <p className="mt-1 text-xs text-muted">{card.hint}</p>
+              </Link>
+            ))}
+          </div>
+        </section>
+      </section>
+
       {memberships.length > 1 ? (
-        <section className="mt-10" aria-labelledby="other-schools">
-          <h2
-            id="other-schools"
-            className="text-sm font-semibold tracking-wide text-ink uppercase"
-          >
-            Your schools
-          </h2>
-          <ul className="mt-3 divide-y divide-line/70 border-y border-line/70">
+        <section className="mt-4 rounded-2xl border border-line bg-paper-elevated p-5">
+          <h2 className="text-sm font-semibold text-ink">Your schools</h2>
+          <ul className="mt-3 flex flex-wrap gap-2">
             {memberships.map((m) => (
-              <li key={m.schoolId} className="py-3 text-sm">
+              <li key={m.schoolId}>
                 <Link
                   href={`/school?school=${m.schoolId}`}
-                  className="text-ink no-underline hover:underline"
+                  className={
+                    m.schoolId === schoolId
+                      ? "inline-flex rounded-lg bg-teal/10 px-3 py-1.5 text-sm font-medium text-teal no-underline"
+                      : "inline-flex rounded-lg border border-line px-3 py-1.5 text-sm text-ink no-underline hover:bg-paper"
+                  }
                 >
                   {m.school.name}
                 </Link>
-                <span className="text-muted"> · {m.role}</span>
               </li>
             ))}
           </ul>
