@@ -1,5 +1,22 @@
 # Environments and Deployment
 
+## Domain architecture (ADR-0002)
+
+One Next.js deployment; surface selected by **hostname**:
+
+| Host | Purpose |
+| --- | --- |
+| `yourdomain.com` | Public marketing site |
+| `www.yourdomain.com` | 308 redirect → apex |
+| `admin.yourdomain.com` | Platform super-admin (`/platform`) |
+| `{schoolSlug}.yourdomain.com` | That school’s portal (`/school`; tenant from slug) |
+
+- Set `NEXT_PUBLIC_ROOT_DOMAIN=yourdomain.com` (or `localhost` for local host tests).
+- Leave unset to keep path-based `/school` and `/platform` (default for early local/dev).
+- Vercel: add apex + `www` + `admin` + wildcard `*.yourdomain.com`.
+- Supabase Auth: allow redirects for apex, `admin.`, and `*.` school hosts.
+- Details: [`decisions/ADR-0002-host-based-tenancy.md`](decisions/ADR-0002-host-based-tenancy.md).
+
 ## Environments
 
 ### Local development
@@ -8,6 +25,7 @@
 - Run Supabase locally with the Supabase CLI/Docker when available. Operator steps: [`../supabase/README.md`](../supabase/README.md) and `./scripts/supabase-local.sh`.
 - Apply schema changes only through ordered files in `supabase/migrations/`.
 - Use synthetic seed data and test users (`supabase/seed.sql`).
+- Optional host routing: `NEXT_PUBLIC_ROOT_DOMAIN=localhost`, then open `http://admin.localhost:3000` and `http://{slug}.localhost:3000`.
 
 ### Staging / preview
 
@@ -15,6 +33,7 @@
 - Vercel preview environment variables point to staging or a non-production branch/project.
 - Use synthetic/anonymized data only.
 - Validate migrations, auth redirect URLs, email flows, private storage, notifications (mocked or test provider), and acceptance journeys.
+- Preview `*.vercel.app` hosts stay in **path mode** unless a stable staging apex + wildcard is configured.
 
 ### Production
 
@@ -22,6 +41,7 @@
 - Only the approved production deployment may receive production secrets.
 - Apply reviewed migrations through a controlled release procedure.
 - Validate health and smoke tests after release; document rollback/recovery decisions.
+- Production must set `NEXT_PUBLIC_ROOT_DOMAIN` to the live apex and wire DNS/TLS for admin + wildcard school hosts.
 
 ## Environment variables
 
@@ -35,6 +55,8 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 # Server-only; do not use NEXT_PUBLIC_ prefix.
 SUPABASE_SECRET_KEY=
 NEXT_PUBLIC_APP_URL=http://localhost:3000
+# Optional apex for host routing (ADR-0002). Example: ilmofahm.com
+# NEXT_PUBLIC_ROOT_DOMAIN=
 ```
 
 Local setup: copy `apps/web/.env.example` → `apps/web/.env.local`, then fill from `supabase status`. Typed validation lives in `apps/web/src/lib/env.ts`; browser/SSR/admin clients live under `apps/web/src/lib/supabase/`.

@@ -35,7 +35,10 @@ export async function GET(request: Request) {
   const isOperator = await isActivePlatformOperator(supabase, data.user.id);
   const fallback = defaultPostAuthPath(isOperator);
   let next = safeAuthNextPath(requestedNext, fallback);
-  if (isOperator && (next === "/app" || next === "/app/" || !requestedNext)) {
+  if (
+    isOperator &&
+    (next === "/school" || next === "/school/" || !requestedNext)
+  ) {
     next = "/platform";
   }
 

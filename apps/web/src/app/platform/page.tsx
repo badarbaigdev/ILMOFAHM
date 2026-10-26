@@ -1,26 +1,44 @@
 import Link from "next/link";
 
-import {
-  getPlatformDashboardStats,
-  listPlatformOrganizations,
-} from "@/features/platform/operator/queries";
 import { requirePlatformOperatorPage } from "@/features/platform/operator/require-operator";
+import { listSchoolApplications } from "@/features/school-applications/queries";
 import { countPendingSchoolApplications } from "@/features/school-applications/queries";
+import { schoolApplicationStatusLabel } from "@/features/school-applications/transitions";
+import {
+  countSubscriptionsByStatus,
+  listSchoolSubscriptions,
+} from "@/features/platform/subscriptions/queries";
+import {
+  countPlatformSchools,
+  listPlatformSchools,
+} from "@/features/schools/platform-queries";
 
 export default async function PlatformDashboardPage() {
   const { supabase } = await requirePlatformOperatorPage(
-    "platform.organizations.read",
+    "platform.applications.read",
   );
 
-  let stats;
-  let recent;
   let openRequests = 0;
+  let schoolCount = 0;
+  let recentSchools: Awaited<ReturnType<typeof listPlatformSchools>> = [];
+  let recentRequests: Awaited<ReturnType<typeof listSchoolApplications>> = [];
+  let subscriptionCounts: Record<string, number> = {};
+  let attentionSubs: Awaited<ReturnType<typeof listSchoolSubscriptions>> = [];
+
   try {
-    [stats, recent, openRequests] = await Promise.all([
-      getPlatformDashboardStats(supabase),
-      listPlatformOrganizations(supabase),
-      countPendingSchoolApplications(supabase).catch(() => 0),
-    ]);
+    [openRequests, schoolCount, recentSchools, recentRequests, subscriptionCounts] =
+      await Promise.all([
+        countPendingSchoolApplications(supabase),
+        countPlatformSchools(supabase),
+        listPlatformSchools(supabase),
+        listSchoolApplications(supabase, { status: "all" }),
+        countSubscriptionsByStatus(supabase),
+      ]);
+    attentionSubs = (
+      await listSchoolSubscriptions(supabase, { currentOnly: true })
+    ).filter((s) =>
+      ["trial", "past_due", "grace", "suspended"].includes(s.status),
+    );
   } catch {
     return (
       <main
@@ -38,7 +56,13 @@ export default async function PlatformDashboardPage() {
     );
   }
 
-  const recentOrgs = recent.slice(0, 8);
+  const schoolsPreview = recentSchools.slice(0, 8);
+  const requestsPreview = recentRequests.slice(0, 8);
+
+  const { count: operatorCount } = await supabase
+    .from("platform_operators")
+    .select("user_id", { count: "exact", head: true })
+    .eq("status", "active");
 
   return (
     <main
@@ -53,8 +77,9 @@ export default async function PlatformDashboardPage() {
         Platform console
       </h1>
       <p className="mt-3 max-w-2xl text-muted">
-        System-wide organization management. This console does not open tenant
-        student or academic records without a separate approved support path.
+        Review school registration requests, manage provisioned tenants, and
+        record manual SaaS subscriptions. This console does not open student
+        records without a separate approved support path.
       </p>
 
       <section aria-labelledby="stats-heading" className="mt-10">
@@ -64,7 +89,7 @@ export default async function PlatformDashboardPage() {
         >
           Overview
         </h2>
-        <dl className="mt-4 grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
+        <dl className="mt-4 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           <div>
             <dt className="text-xs tracking-wide text-muted uppercase">
               Open requests
@@ -75,26 +100,18 @@ export default async function PlatformDashboardPage() {
           </div>
           <div>
             <dt className="text-xs tracking-wide text-muted uppercase">
-              Organizations
+              Schools
             </dt>
             <dd className="mt-1 font-display text-3xl text-ink">
-              {stats.organizationCount}
+              {schoolCount}
             </dd>
           </div>
           <div>
             <dt className="text-xs tracking-wide text-muted uppercase">
-              Active
+              Active subscriptions
             </dt>
             <dd className="mt-1 font-display text-3xl text-ink">
-              {stats.activeOrganizationCount}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-xs tracking-wide text-muted uppercase">
-              Trial
-            </dt>
-            <dd className="mt-1 font-display text-3xl text-ink">
-              {stats.trialOrganizationCount}
+              {subscriptionCounts.active ?? 0}
             </dd>
           </div>
           <div>
@@ -102,10 +119,15 @@ export default async function PlatformDashboardPage() {
               Operators
             </dt>
             <dd className="mt-1 font-display text-3xl text-ink">
-              {stats.operatorCount}
+              {operatorCount ?? 0}
             </dd>
           </div>
         </dl>
+        <p className="mt-4 text-sm text-muted">
+          Trials {subscriptionCounts.trial ?? 0} · Past due{" "}
+          {subscriptionCounts.past_due ?? 0} · Suspended{" "}
+          {subscriptionCounts.suspended ?? 0}
+        </p>
       </section>
 
       <p className="mt-10 flex flex-wrap gap-x-4 gap-y-2 text-sm">
@@ -116,16 +138,22 @@ export default async function PlatformDashboardPage() {
           Review school requests
         </Link>
         <Link
-          href="/platform/organizations"
+          href="/platform/subscriptions"
           className="font-medium text-ink underline-offset-2 hover:underline"
         >
-          Manage organizations
+          Subscriptions
         </Link>
         <Link
-          href="/platform/organizations/new"
+          href="/platform/plans"
           className="font-medium text-ink underline-offset-2 hover:underline"
         >
-          Create organization
+          Plans
+        </Link>
+        <Link
+          href="/platform/schools"
+          className="font-medium text-ink underline-offset-2 hover:underline"
+        >
+          View schools
         </Link>
         <Link
           href="/platform/operators"
@@ -135,30 +163,107 @@ export default async function PlatformDashboardPage() {
         </Link>
       </p>
 
-      <section aria-labelledby="recent-heading" className="mt-12">
-        <h2
-          id="recent-heading"
-          className="text-sm font-semibold tracking-wide text-ink uppercase"
-        >
-          Recent organizations
-        </h2>
-        {recentOrgs.length === 0 ? (
-          <p className="mt-4 text-sm text-muted">No organizations yet.</p>
-        ) : (
+      {attentionSubs.length > 0 ? (
+        <section aria-labelledby="billing-attention-heading" className="mt-12">
+          <h2
+            id="billing-attention-heading"
+            className="text-sm font-semibold tracking-wide text-ink uppercase"
+          >
+            Subscription attention
+          </h2>
           <ul className="mt-4 divide-y divide-line/70 border-y border-line/70">
-            {recentOrgs.map((org) => (
+            {attentionSubs.slice(0, 8).map((sub) => (
               <li
-                key={org.id}
+                key={sub.id}
                 className="flex flex-wrap items-baseline justify-between gap-2 py-4"
               >
                 <div>
-                  <p className="font-medium text-ink">{org.name}</p>
+                  <p className="font-medium text-ink">
+                    <Link
+                      href={`/platform/subscriptions/${sub.id}`}
+                      className="text-ink no-underline hover:underline"
+                    >
+                      {sub.schoolName}
+                    </Link>
+                  </p>
+                  <p className="text-sm text-muted">{sub.planName}</p>
+                </div>
+                <p className="text-xs tracking-wide text-muted uppercase">
+                  {sub.status.replaceAll("_", " ")}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      <section aria-labelledby="requests-heading" className="mt-12">
+        <h2
+          id="requests-heading"
+          className="text-sm font-semibold tracking-wide text-ink uppercase"
+        >
+          Recent school requests
+        </h2>
+        {requestsPreview.length === 0 ? (
+          <p className="mt-4 text-sm text-muted">No school applications yet.</p>
+        ) : (
+          <ul className="mt-4 divide-y divide-line/70 border-y border-line/70">
+            {requestsPreview.map((app) => (
+              <li
+                key={app.id}
+                className="flex flex-wrap items-baseline justify-between gap-2 py-4"
+              >
+                <div>
+                  <p className="font-medium text-ink">
+                    <Link
+                      href={`/platform/requests/${app.id}`}
+                      className="text-ink no-underline hover:underline"
+                    >
+                      {app.schoolName}
+                    </Link>
+                  </p>
                   <p className="text-sm text-muted">
-                    {org.institutionType} · {org.status}
-                    {org.ownerFullName ? ` · owner ${org.ownerFullName}` : ""}
+                    {app.applicantEmail}
+                    {app.city ? ` · ${app.city}` : ""}
                   </p>
                 </div>
-                <p className="font-mono text-xs text-muted">{org.slug}</p>
+                <p className="text-xs tracking-wide text-muted uppercase">
+                  {schoolApplicationStatusLabel(app.status)}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section aria-labelledby="schools-heading" className="mt-12">
+        <h2
+          id="schools-heading"
+          className="text-sm font-semibold tracking-wide text-ink uppercase"
+        >
+          Recent schools
+        </h2>
+        {schoolsPreview.length === 0 ? (
+          <p className="mt-4 text-sm text-muted">
+            No schools provisioned yet. Approve a request to create the first
+            one.
+          </p>
+        ) : (
+          <ul className="mt-4 divide-y divide-line/70 border-y border-line/70">
+            {schoolsPreview.map((school) => (
+              <li
+                key={school.id}
+                className="flex flex-wrap items-baseline justify-between gap-2 py-4"
+              >
+                <div>
+                  <p className="font-medium text-ink">{school.name}</p>
+                  <p className="text-sm text-muted">
+                    {school.institutionType} ·{" "}
+                    {school.status.replaceAll("_", " ")}
+                    {school.city ? ` · ${school.city}` : ""}
+                  </p>
+                </div>
+                <p className="font-mono text-xs text-muted">{school.slug}</p>
               </li>
             ))}
           </ul>

@@ -9,6 +9,7 @@ import {
   institutionTypeLabel,
   isInstitutionType,
 } from "@/features/institution/mode";
+import { getSchoolProvisioningSnapshot } from "@/features/schools/platform-queries";
 
 type Params = Promise<{ id: string }>;
 
@@ -50,6 +51,13 @@ export default async function PlatformRequestDetailPage({
   if (!application) {
     notFound();
   }
+
+  const provisioning = application.provisionedSchoolId
+    ? await getSchoolProvisioningSnapshot(
+        supabase,
+        application.provisionedSchoolId,
+      ).catch(() => null)
+    : null;
 
   return (
     <main
@@ -161,10 +169,38 @@ export default async function PlatformRequestDetailPage({
         {application.provisionedSchoolId ? (
           <div className="sm:col-span-2">
             <dt className="text-xs tracking-wide text-muted uppercase">
-              Provisioned school
+              School created
             </dt>
-            <dd className="mt-1 font-mono text-xs text-muted">
-              {application.provisionedSchoolId}
+            <dd className="mt-1 space-y-1 text-ink">
+              {provisioning ? (
+                <>
+                  <p>
+                    {provisioning.schoolName}
+                    {provisioning.schoolSlug
+                      ? ` · ${provisioning.schoolSlug}`
+                      : ""}{" "}
+                    · {provisioning.schoolStatus.replaceAll("_", " ")}
+                  </p>
+                  <p className="text-sm text-muted">
+                    Campus: {provisioning.campusName ?? "missing"}
+                    {" · "}
+                    School admin invite:{" "}
+                    {provisioning.invitationStatus === "accepted"
+                      ? "accepted — they can sign in at /school"
+                      : provisioning.invitationStatus === "pending"
+                        ? "pending — share the activation link below"
+                        : (provisioning.invitationStatus ?? "missing")}
+                  </p>
+                </>
+              ) : null}
+              <p>
+                <Link
+                  href="/platform/schools"
+                  className="text-sm text-ink underline-offset-2 hover:underline"
+                >
+                  Open schools list
+                </Link>
+              </p>
             </dd>
           </div>
         ) : null}
@@ -174,6 +210,11 @@ export default async function PlatformRequestDetailPage({
         applicationId={application.id}
         status={application.status}
         currentReviewNotes={application.reviewNotes}
+        provisionedSchoolId={application.provisionedSchoolId}
+        provisioningComplete={provisioning?.complete ?? null}
+        applicantEmail={application.applicantEmail}
+        schoolName={application.schoolName}
+        invitationStatus={provisioning?.invitationStatus ?? null}
       />
     </main>
   );

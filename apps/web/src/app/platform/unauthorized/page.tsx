@@ -48,12 +48,21 @@ export default async function PlatformUnauthorizedPage() {
           ? "Your platform operator access is suspended or revoked. Contact another active operator if you need it restored."
           : "This console is limited to active platform operators. Signing up or joining a school does not grant platform privileges."}
       </p>
+      {!revokedOrSuspended ? (
+        <p className="mt-4 text-sm text-muted">
+          Local first-operator setup uses the repository bootstrap script, or{" "}
+          <span className="font-mono text-ink">/platform/bootstrap</span> only
+          when{" "}
+          <span className="font-mono text-ink">PLATFORM_BOOTSTRAP_SECRET</span>{" "}
+          is configured. That page is not a public signup path.
+        </p>
+      ) : null}
       <div className="mt-8 flex flex-wrap gap-4 text-sm">
         <Link
-          href="/app"
+          href="/school"
           className="font-medium text-ink underline-offset-2 hover:underline"
         >
-          Go to school workspace
+          School portal
         </Link>
         <Link
           href="/"

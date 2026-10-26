@@ -1,7 +1,14 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useState } from "react";
 
+import {
+  DialogField,
+  DialogTextarea,
+  FormDialog,
+} from "@/components/ui/dialog";
+import { useActionDialog } from "@/components/ui/use-action-dialog";
 import {
   approveSchoolApplicationAction,
   type ApproveSchoolApplicationState,
@@ -14,6 +21,14 @@ import {
   schoolApplicationStatusLabel,
   type SchoolApplicationStatus,
 } from "@/features/school-applications/transitions";
+import {
+  FreshActivationLinkPanel,
+  ReissueActivationLinkPanel,
+} from "@/features/schools/invitations/share-activation-link";
+import {
+  provisionSchoolFromApplicationAction,
+  type ProvisionSchoolActionState,
+} from "@/features/schools/provision-actions";
 
 const initialReviewState: ReviewSchoolApplicationState = {
   error: null,
@@ -28,20 +43,46 @@ const initialApproveState: ApproveSchoolApplicationState = {
   alreadyProvisioned: false,
 };
 
+const initialProvisionState: ProvisionSchoolActionState = {
+  error: null,
+  success: null,
+  invitationToken: null,
+  schoolId: null,
+  alreadyProvisioned: false,
+  healed: false,
+};
+
 type Props = {
   applicationId: string;
   status: SchoolApplicationStatus;
   currentReviewNotes: string | null;
+  provisionedSchoolId: string | null;
+  provisioningComplete: boolean | null;
+  applicantEmail: string;
+  schoolName: string;
+  invitationStatus: string | null;
 };
 
 export function SchoolApplicationReviewForms({
   applicationId,
   status,
   currentReviewNotes,
+  provisionedSchoolId,
+  provisioningComplete,
+  applicantEmail,
+  schoolName,
+  invitationStatus,
 }: Props) {
   const reviewTargets = reviewTargetsFor(status);
-  const showApprove = canApproveApplication(status) || status === "approved";
+  const showApprove = canApproveApplication(status);
   const alreadyApproved = status === "approved";
+  const showProvision =
+    alreadyApproved &&
+    (provisionedSchoolId === null || provisioningComplete === false);
+  const showSharePanel =
+    alreadyApproved &&
+    Boolean(provisionedSchoolId) &&
+    provisioningComplete !== false;
 
   const [toStatus, setToStatus] = useState<SchoolApplicationStatus | "">(
     reviewTargets[0] ?? "",
@@ -54,230 +95,225 @@ export function SchoolApplicationReviewForms({
     approveSchoolApplicationAction,
     initialApproveState,
   );
+  const [provisionState, provisionAction, provisionPending] = useActionState(
+    provisionSchoolFromApplicationAction,
+    initialProvisionState,
+  );
+
+  const reviewDialog = useActionDialog(reviewState);
+  const approveDialog = useActionDialog(approveState);
+  const provisionDialog = useActionDialog(provisionState);
+
+  const freshToken =
+    approveState.invitationToken ?? provisionState.invitationToken ?? null;
 
   return (
-    <div className="mt-10 space-y-10">
-      {reviewTargets.length > 0 ? (
-        <section aria-labelledby="review-heading">
-          <h2
-            id="review-heading"
-            className="text-sm font-semibold tracking-wide text-ink uppercase"
+    <div className="mt-10 space-y-8">
+      <div className="flex flex-wrap gap-2">
+        {reviewTargets.length > 0 ? (
+          <button
+            type="button"
+            onClick={reviewDialog.openDialog}
+            className="rounded-md border border-line bg-paper-elevated px-4 py-2 text-sm font-medium text-ink"
           >
             Update status
-          </h2>
-          <form
-            action={reviewAction}
-            className="mt-4 max-w-lg space-y-4"
-            noValidate
+          </button>
+        ) : null}
+        {showApprove ? (
+          <button
+            type="button"
+            onClick={approveDialog.openDialog}
+            className="rounded-md bg-teal px-4 py-2 text-sm font-medium text-white"
           >
-            <input type="hidden" name="application_id" value={applicationId} />
-            <input type="hidden" name="from_status" value={status} />
+            Approve &amp; create school
+          </button>
+        ) : null}
+        {showProvision ? (
+          <button
+            type="button"
+            onClick={provisionDialog.openDialog}
+            className="rounded-md bg-teal px-4 py-2 text-sm font-medium text-white"
+          >
+            Complete school creation
+          </button>
+        ) : null}
+      </div>
 
-            <div className="space-y-1.5">
-              <label
-                htmlFor="to-status"
-                className="block text-sm font-medium text-ink"
-              >
-                New status
-              </label>
-              <select
-                id="to-status"
-                name="to_status"
-                value={toStatus}
-                onChange={(e) =>
-                  setToStatus(e.target.value as SchoolApplicationStatus)
-                }
-                required
-                className="w-full rounded-md border border-line bg-paper-elevated px-3 py-2 text-ink outline-none focus-visible:border-teal"
-              >
-                {reviewTargets.map((target) => (
-                  <option key={target} value={target}>
-                    {schoolApplicationStatusLabel(target)}
-                  </option>
-                ))}
-              </select>
-            </div>
+      <p className="text-sm text-muted">
+        Current status:{" "}
+        <span className="font-medium text-ink">
+          {schoolApplicationStatusLabel(status)}
+        </span>
+        . Use status updates for under review, information requests, or
+        rejection. Final approval creates the school workspace.
+      </p>
 
-            <div className="space-y-1.5">
-              <label
-                htmlFor="review-notes"
-                className="block text-sm font-medium text-ink"
-              >
-                Review notes (optional)
-              </label>
-              <textarea
-                id="review-notes"
-                name="review_notes"
-                rows={3}
-                defaultValue={currentReviewNotes ?? ""}
-                className="w-full rounded-md border border-line bg-paper-elevated px-3 py-2 text-ink outline-none focus-visible:border-teal"
-              />
-            </div>
+      <FormDialog
+        open={reviewDialog.open}
+        onClose={reviewDialog.closeDialog}
+        title="Update application status"
+        description="Review notes and outcome for this school request."
+        submitLabel="Save status"
+        formAction={reviewAction}
+        busy={reviewPending}
+        dirty={reviewDialog.dirty}
+        onDirtyChange={reviewDialog.setDirty}
+        error={reviewState.error}
+        tone={toStatus === "rejected" ? "danger" : "default"}
+      >
+        <input type="hidden" name="application_id" value={applicationId} />
+        <input type="hidden" name="from_status" value={status} />
+        <div className="space-y-1.5">
+          <label htmlFor="to_status" className="block text-sm font-medium text-ink">
+            New status <span className="text-red-700">*</span>
+          </label>
+          <select
+            id="to_status"
+            name="to_status"
+            value={toStatus}
+            onChange={(e) =>
+              setToStatus(e.target.value as SchoolApplicationStatus | "")
+            }
+            required
+            className="w-full rounded-md border border-line bg-paper-elevated px-3 py-2 text-ink outline-none focus-visible:border-teal"
+          >
+            {reviewTargets.map((target) => (
+              <option key={target} value={target}>
+                {schoolApplicationStatusLabel(target)}
+              </option>
+            ))}
+          </select>
+        </div>
+        <DialogTextarea
+          id="review_notes"
+          name="review_notes"
+          label="Review notes (optional)"
+          rows={2}
+          defaultValue={currentReviewNotes ?? ""}
+        />
+        {toStatus === "rejected" ? (
+          <DialogTextarea
+            id="rejection_reason"
+            name="rejection_reason"
+            label="Rejection reason"
+            required
+            rows={2}
+          />
+        ) : null}
+        {toStatus === "information_requested" ? (
+          <DialogTextarea
+            id="information_request"
+            name="information_request"
+            label="Information request"
+            required
+            rows={2}
+          />
+        ) : null}
+      </FormDialog>
 
-            {toStatus === "rejected" ? (
-              <div className="space-y-1.5">
-                <label
-                  htmlFor="rejection-reason"
-                  className="block text-sm font-medium text-ink"
-                >
-                  Rejection reason
-                </label>
-                <textarea
-                  id="rejection-reason"
-                  name="rejection_reason"
-                  rows={3}
-                  required
-                  className="w-full rounded-md border border-line bg-paper-elevated px-3 py-2 text-ink outline-none focus-visible:border-teal"
-                />
-              </div>
-            ) : null}
+      <FormDialog
+        open={approveDialog.open}
+        onClose={approveDialog.closeDialog}
+        title="Approve and create school"
+        description={`Creates the school, a default campus, and an activation link for ${applicantEmail}.`}
+        submitLabel="Approve and create school"
+        formAction={approveAction}
+        busy={approvePending}
+        dirty={approveDialog.dirty}
+        onDirtyChange={approveDialog.setDirty}
+        error={approveState.error}
+      >
+        <input type="hidden" name="application_id" value={applicationId} />
+        <input type="hidden" name="from_status" value={status} />
+        <DialogTextarea
+          id="approve-notes"
+          name="review_notes"
+          label="Review notes (optional)"
+          rows={2}
+          defaultValue={currentReviewNotes ?? ""}
+        />
+        <DialogField
+          id="campus-name"
+          name="campus_name"
+          label="Default campus name"
+          defaultValue="Main campus"
+        />
+        <label className="flex items-start gap-2 text-sm text-ink">
+          <input
+            type="checkbox"
+            name="confirm_approve"
+            value="yes"
+            required
+            className="mt-1"
+          />
+          <span>
+            I confirm approval and school provisioning for{" "}
+            <strong>{schoolName}</strong>.
+          </span>
+        </label>
+      </FormDialog>
 
-            {toStatus === "information_requested" ? (
-              <div className="space-y-1.5">
-                <label
-                  htmlFor="information-request"
-                  className="block text-sm font-medium text-ink"
-                >
-                  Information request
-                </label>
-                <textarea
-                  id="information-request"
-                  name="information_request"
-                  rows={3}
-                  required
-                  className="w-full rounded-md border border-line bg-paper-elevated px-3 py-2 text-ink outline-none focus-visible:border-teal"
-                />
-              </div>
-            ) : null}
+      <FormDialog
+        open={provisionDialog.open}
+        onClose={provisionDialog.closeDialog}
+        title="Complete school creation"
+        description={
+          provisionedSchoolId
+            ? "Something is incomplete (campus or invitation). Retry is safe."
+            : "This application is approved but the school was not created yet."
+        }
+        submitLabel="Create school"
+        formAction={provisionAction}
+        busy={provisionPending}
+        dirty={provisionDialog.dirty}
+        onDirtyChange={provisionDialog.setDirty}
+        error={provisionState.error}
+      >
+        <input type="hidden" name="application_id" value={applicationId} />
+        <DialogField
+          id="provision-campus-name"
+          name="campus_name"
+          label="Default campus name"
+          defaultValue="Main campus"
+        />
+      </FormDialog>
 
-            {reviewState.error ? (
-              <p role="alert" className="text-sm text-red-700">
-                {reviewState.error}
-              </p>
-            ) : null}
-            {reviewState.success ? (
-              <p role="status" className="text-sm text-teal">
-                {reviewState.success}
-              </p>
-            ) : null}
-
-            <button
-              type="submit"
-              disabled={reviewPending || !toStatus}
-              className="rounded-md bg-ink px-4 py-2 text-sm font-medium text-paper-elevated disabled:opacity-60"
-            >
-              {reviewPending ? "Saving…" : "Save status"}
-            </button>
-          </form>
-        </section>
+      {approveState.invitationToken ? (
+        <FreshActivationLinkPanel
+          token={approveState.invitationToken}
+          applicantEmail={applicantEmail}
+          schoolName={schoolName}
+        />
       ) : null}
 
-      {showApprove ? (
-        <section aria-labelledby="approve-heading">
-          <h2
-            id="approve-heading"
-            className="text-sm font-semibold tracking-wide text-ink uppercase"
+      {provisionState.invitationToken && !approveState.invitationToken ? (
+        <FreshActivationLinkPanel
+          token={provisionState.invitationToken}
+          applicantEmail={applicantEmail}
+          schoolName={schoolName}
+        />
+      ) : null}
+
+      {showSharePanel && provisionedSchoolId && !freshToken ? (
+        <ReissueActivationLinkPanel
+          schoolId={provisionedSchoolId}
+          schoolName={schoolName}
+          applicantEmail={applicantEmail}
+          invitationStatus={invitationStatus}
+        />
+      ) : null}
+
+      {showSharePanel && freshToken ? (
+        <p className="text-sm text-muted">
+          After sharing the link, the school admin opens it, signs in with{" "}
+          {applicantEmail}, and enters their school dashboard.{" "}
+          <Link
+            href="/platform/schools"
+            className="text-ink underline-offset-2 hover:underline"
           >
-            {alreadyApproved ? "Provisioning" : "Approve and provision"}
-          </h2>
-          <p className="mt-2 max-w-xl text-sm text-muted">
-            {alreadyApproved
-              ? "This application is approved. Re-running approval is idempotent and will not create a second school."
-              : "Approval creates the school tenant, a default campus, and a one-time owner invitation token. Email delivery comes in a later phase."}
-          </p>
-          <form
-            action={approveAction}
-            className="mt-4 max-w-lg space-y-4"
-            noValidate
-          >
-            <input type="hidden" name="application_id" value={applicationId} />
-            <input type="hidden" name="from_status" value={status} />
-
-            {!alreadyApproved ? (
-              <>
-                <div className="space-y-1.5">
-                  <label
-                    htmlFor="approve-notes"
-                    className="block text-sm font-medium text-ink"
-                  >
-                    Review notes (optional)
-                  </label>
-                  <textarea
-                    id="approve-notes"
-                    name="review_notes"
-                    rows={2}
-                    defaultValue={currentReviewNotes ?? ""}
-                    className="w-full rounded-md border border-line bg-paper-elevated px-3 py-2 text-ink outline-none focus-visible:border-teal"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label
-                    htmlFor="campus-name"
-                    className="block text-sm font-medium text-ink"
-                  >
-                    Default campus name
-                  </label>
-                  <input
-                    id="campus-name"
-                    name="campus_name"
-                    type="text"
-                    defaultValue="Main campus"
-                    className="w-full rounded-md border border-line bg-paper-elevated px-3 py-2 text-ink outline-none focus-visible:border-teal"
-                  />
-                </div>
-                <label className="flex items-start gap-2 text-sm text-ink">
-                  <input
-                    type="checkbox"
-                    name="confirm_approve"
-                    value="yes"
-                    required
-                    className="mt-1"
-                  />
-                  <span>
-                    I confirm approval and controlled school provisioning for
-                    this application.
-                  </span>
-                </label>
-              </>
-            ) : (
-              <input type="hidden" name="confirm_approve" value="yes" />
-            )}
-
-            {approveState.error ? (
-              <p role="alert" className="text-sm text-red-700">
-                {approveState.error}
-              </p>
-            ) : null}
-            {approveState.success ? (
-              <div role="status" className="space-y-2 text-sm text-teal">
-                <p>{approveState.success}</p>
-                {approveState.schoolId ? (
-                  <p className="font-mono text-xs text-muted">
-                    School id: {approveState.schoolId}
-                  </p>
-                ) : null}
-                {approveState.invitationToken ? (
-                  <p className="break-all font-mono text-xs text-ink">
-                    Owner invitation token (shown once):{" "}
-                    {approveState.invitationToken}
-                  </p>
-                ) : null}
-              </div>
-            ) : null}
-
-            <button
-              type="submit"
-              disabled={approvePending}
-              className="rounded-md bg-teal px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
-            >
-              {approvePending
-                ? "Working…"
-                : alreadyApproved
-                  ? "Re-check provisioning"
-                  : "Approve application"}
-            </button>
-          </form>
-        </section>
+            View schools
+          </Link>
+        </p>
       ) : null}
     </div>
   );

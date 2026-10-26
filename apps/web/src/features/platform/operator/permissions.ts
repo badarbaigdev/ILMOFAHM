@@ -11,6 +11,8 @@ export const PLATFORM_PERMISSIONS = [
   "platform.schools.read",
   "platform.operators.read",
   "platform.operators.manage",
+  "platform.subscriptions.read",
+  "platform.subscriptions.manage",
 ] as const;
 
 export type PlatformPermission = (typeof PLATFORM_PERMISSIONS)[number];

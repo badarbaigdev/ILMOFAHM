@@ -1,6 +1,7 @@
 /**
  * Central plan definitions for the public pricing page.
- * Replace with database-backed `subscription_plans` when Phase 9 lands.
+ * Platform operators manage the DB catalog `subscription_plans` (Phase 9).
+ * This file remains the marketing page source until a public DB read is wired.
  * Amounts are illustrative examples — not confirmed commercial prices.
  */
 

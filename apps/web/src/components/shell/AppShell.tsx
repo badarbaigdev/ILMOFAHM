@@ -40,7 +40,7 @@ export async function AppShell({ children }: AppShellProps) {
     isPlatformOperator = false;
   }
 
-  const homeHref = user ? (isPlatformOperator ? "/platform" : "/app") : "/";
+  const homeHref = user ? (isPlatformOperator ? "/platform" : "/school") : "/";
 
   return (
     <div className="flex min-h-screen flex-col">

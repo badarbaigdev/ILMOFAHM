@@ -222,6 +222,7 @@ export async function approveSchoolApplicationAction(
   const alreadyProvisioned = Boolean(row?.already_provisioned);
 
   revalidatePath("/platform");
+  revalidatePath("/platform/schools");
   revalidatePath("/platform/requests");
   revalidatePath(`/platform/requests/${applicationId}`);
 

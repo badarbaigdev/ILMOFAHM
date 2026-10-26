@@ -11,6 +11,7 @@ export const marketingNav = [
   { href: "/pricing", label: "Pricing" },
   { href: "/demo", label: "Request a demo" },
   { href: "/contact", label: "Contact" },
+  { href: "/register-school", label: "Register school" },
 ] as const;
 
 export const marketingCta = {
@@ -98,18 +99,18 @@ export const featuresContent = {
       items: [
         {
           title: "School administration",
-          body: "School profile, campuses, locale, and operational settings under owner control.",
-          availability: "in_progress" as FeatureAvailability,
+          body: "School profile, campuses, locale, branding, and setup checklist under owner control.",
+          availability: "available" as FeatureAvailability,
         },
         {
           title: "Role-based access",
           body: "Owners, administrators, teachers, accountants, and staff with server-enforced permissions.",
-          availability: "in_progress" as FeatureAvailability,
+          availability: "available" as FeatureAvailability,
         },
         {
           title: "Multi-school SaaS architecture",
-          body: "Shared application, school-isolated data, and platform operator tools for onboarding.",
-          availability: "in_progress" as FeatureAvailability,
+          body: "Shared application, school-isolated data, host-ready domains, and platform operator tools.",
+          availability: "available" as FeatureAvailability,
         },
       ],
     },
@@ -118,13 +119,18 @@ export const featuresContent = {
       items: [
         {
           title: "Student records",
-          body: "Admissions, profiles, guardians, and enrollment history.",
-          availability: "planned" as FeatureAvailability,
+          body: "Manual create, CSV import dry-run/commit, enrolments, and student directories.",
+          availability: "available" as FeatureAvailability,
+        },
+        {
+          title: "Guardians",
+          body: "Guardian contacts and verified student relationship links (portal login planned).",
+          availability: "available" as FeatureAvailability,
         },
         {
           title: "Staff management",
-          body: "Staff records, teaching assignments, and membership lifecycle.",
-          availability: "planned" as FeatureAvailability,
+          body: "Invite/revoke memberships and roles today; dedicated teacher HR profiles planned.",
+          availability: "in_progress" as FeatureAvailability,
         },
       ],
     },
@@ -133,13 +139,13 @@ export const featuresContent = {
       items: [
         {
           title: "Academic years and classes",
-          body: "Years, terms, grades, sections, subjects, and structure setup.",
-          availability: "in_progress" as FeatureAvailability,
+          body: "Years, terms, grades, sections, subjects, and school structure setup.",
+          availability: "available" as FeatureAvailability,
         },
         {
           title: "Attendance",
-          body: "Sessions, daily marks, corrections, and summaries.",
-          availability: "planned" as FeatureAvailability,
+          body: "Daily section sessions, draft/submit marks, and manager corrections.",
+          availability: "available" as FeatureAvailability,
         },
         {
           title: "Exams and results",
@@ -155,6 +161,11 @@ export const featuresContent = {
           title: "Fee management",
           body: "Fee structures, invoices, payments, and outstanding balances for the school.",
           availability: "planned" as FeatureAvailability,
+        },
+        {
+          title: "Manual SaaS subscriptions",
+          body: "Platform plans, school subscriptions, and recorded payments (no gateway yet).",
+          availability: "available" as FeatureAvailability,
         },
         {
           title: "Reporting",

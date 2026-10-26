@@ -246,15 +246,35 @@ export type PlatformBootstrapActionState = {
 };
 
 /**
- * First-operator bootstrap. Succeeds only while no active operator exists.
- * After that the database permanently rejects bootstrap.
+ * First-operator bootstrap. Requires PLATFORM_BOOTSTRAP_SECRET match, and
+ * succeeds only while no active operator exists (DB permanently rejects after).
  */
 export async function bootstrapFirstPlatformOperatorAction(
   _prev: PlatformBootstrapActionState,
   formData: FormData,
 ): Promise<PlatformBootstrapActionState> {
   void _prev;
-  void formData;
+
+  const { bootstrapSecretsMatch, isWebBootstrapConfigured } = await import(
+    "@/features/platform/operator/bootstrap-secret"
+  );
+
+  if (!isWebBootstrapConfigured()) {
+    return {
+      error:
+        "Web bootstrap is disabled. Set PLATFORM_BOOTSTRAP_SECRET in server env, or use the local bootstrap script.",
+      success: null,
+    };
+  }
+
+  const submittedSecret = String(formData.get("bootstrap_secret") ?? "");
+  if (!bootstrapSecretsMatch(submittedSecret)) {
+    return {
+      error: "Invalid bootstrap secret.",
+      success: null,
+    };
+  }
+
   const supabase = await createServerSupabaseClient();
   const {
     data: { user },

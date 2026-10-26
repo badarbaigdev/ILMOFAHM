@@ -25,7 +25,7 @@ Deploy: GitHub → Vercel (`apps/web` root). Migrations applied separately throu
 | Path | Role |
 | --- | --- |
 | `apps/web/` | Next.js 15 App Router application |
-| `apps/web/src/app/` | Routes (marketing, auth, `/app`, `/platform`) |
+| `apps/web/src/app/` | Routes (public marketing, auth, `/platform`, `/school`) |
 | `apps/web/src/features/` | Domain modules (auth, platform, institution, academic, …) |
 | `apps/web/src/components/` | Shared UI shells |
 | `apps/web/src/lib/` | Env, brand, Supabase clients, health |
@@ -37,7 +37,7 @@ Deploy: GitHub → Vercel (`apps/web` root). Migrations applied separately throu
 
 **School onboarding (Phase 2+):** `schools`, `school_campuses`, `school_memberships`, `school_applications`, `school_invitations`, plus shared `profiles` / `platform_operators` / `audit_events`.
 
-**Legacy workspace (temporary):** `organizations`, `campuses`, `organization_memberships`, and related academic tables still power `/app` until a dedicated cutover. New registration → login work must use the school tables and must not depend on organization tables.
+**Legacy workspace (temporary):** `organizations` and related tables remain in the database for older code under `src/app/app/`, but live product URLs `/app/*` redirect to `/school`. New registration → login work must use school tables only.
 
 See `docs/database-schema.md` for the dual-model note and clean-init steps.
 
@@ -51,15 +51,18 @@ See `docs/database-schema.md` for the dual-model note and clean-init steps.
 
 Privileged `SUPABASE_SECRET_KEY` / service role: server-only, never `NEXT_PUBLIC_*`.
 
-## Public vs authenticated surfaces
+## Route lanes (product surface)
 
-| Surface | Purpose | Auth |
+| Lane | Routes | Auth |
 | --- | --- | --- |
-| Marketing routes (`/`, `/features`, …) | Static product site | None |
-| `/auth/*` | Sign-in, sign-up, recovery, invites | Session lifecycle |
-| `/platform/*` | Platform operators | `platform_operators` |
-| `/app/*` | Institution workspace (legacy org path) | Membership |
-| Future `/school/*` | School portal (Phase 8) | `school_memberships` |
+| **Public** | `/`, `/features`, `/pricing`, `/demo`, `/register-school`, `/contact`, `/privacy`, `/terms` | None |
+| **Auth** | `/auth/sign-in`, `/auth/sign-up`, `/auth/forgot-password`, `/auth/update-password`, `/auth/callback`, `/auth/accept-school-invite` | Session lifecycle |
+| **Platform admin** | `/platform`, `/platform/requests`, `/platform/schools`, `/platform/plans`, `/platform/subscriptions`, `/platform/operators` | Active `platform_operators` row |
+| **School admin** | `/school`, `/school/setup`, `/school/settings`, `/school/members` | Active `school_memberships` + role permission matrix |
+
+**Removed from the live product surface:** `/app/*` (legacy org workspace) and `/platform/organizations*` redirect away. Org invite `/auth/accept-invite` redirects to school invite accept.
+
+**Platform bootstrap:** `/platform/bootstrap` is not a public signup path. It requires server env `PLATFORM_BOOTSTRAP_SECRET` (and the DB still refuses bootstrap once any active operator exists). Prefer `./scripts/bootstrap-platform-operator.sh` for local setup.
 
 ## Feature module conventions
 

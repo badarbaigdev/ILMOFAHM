@@ -298,35 +298,46 @@ select is_empty(
   'owner A cannot select School Beta campuses'
 );
 
+-- Phase 8: school/campus writes go through SECURITY DEFINER RPCs only.
 select throws_ok(
   $$
     update public.school_campuses
     set school_id = '22222222-2222-2222-2222-222222222222'
     where id = '33333333-3333-3333-3333-333333333333'
   $$,
-  '23514',
+  '42501',
   null,
-  'owner A cannot reassign campus school_id'
+  'owner A cannot direct-update campuses (RPC-only writes)'
 );
 
 select lives_ok(
   $$
-    update public.schools
-    set city = 'Lahore'
-    where id = '11111111-1111-1111-1111-111111111111'
+    select * from public.update_school_profile(
+      '11111111-1111-1111-1111-111111111111',
+      'School Alpha',
+      'school',
+      null,
+      null,
+      null,
+      'Lahore',
+      null,
+      'PK'
+    )
   $$,
-  'owner A can update own school profile fields'
+  'owner A can update own school profile via RPC'
 );
 
-select results_eq(
+select throws_ok(
   $$
-    update public.schools
-    set city = 'Hacked'
-    where id = '22222222-2222-2222-2222-222222222222'
-    returning city
+    select * from public.update_school_profile(
+      '22222222-2222-2222-2222-222222222222',
+      'Hacked',
+      'school'
+    )
   $$,
-  $$ select city from public.schools where false $$,
-  'owner A cannot update School Beta'
+  '42501',
+  'Not authorized to update this school',
+  'owner A cannot update School Beta via RPC'
 );
 
 select is_empty(

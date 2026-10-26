@@ -3,11 +3,18 @@
 import { useActionState } from "react";
 
 import {
+  DialogField,
+  DialogSelect,
+  FormDialog,
+} from "@/components/ui/dialog";
+import { useActionDialog } from "@/components/ui/use-action-dialog";
+import {
   type CampusActionState,
   createCampusAction,
   updateCampusAction,
 } from "@/features/institution/campuses/actions";
 import type { CampusRow } from "@/features/institution/campuses/queries";
+import { StatusBadge } from "@/features/schools/ui/data-table";
 
 const initialState: CampusActionState = { error: null, success: null };
 
@@ -22,244 +29,149 @@ function CreateCampusForm({ organizationId }: { organizationId: string }) {
     createCampusAction,
     initialState,
   );
+  const dialog = useActionDialog(state);
 
   return (
-    <section aria-labelledby="create-campus-heading" className="mt-8">
-      <h3
-        id="create-campus-heading"
-        className="text-sm font-semibold tracking-wide text-ink uppercase"
+    <div className="mt-6">
+      <button
+        type="button"
+        onClick={dialog.openDialog}
+        className="rounded-md bg-teal px-4 py-2 text-sm font-medium text-white"
       >
-        Add campus
-      </h3>
-      <form action={formAction} className="mt-4 max-w-md space-y-3" noValidate>
+        + Add campus
+      </button>
+      <FormDialog
+        open={dialog.open}
+        onClose={dialog.closeDialog}
+        title="Add campus"
+        description="Create a branch for this organization."
+        submitLabel="Create campus"
+        formAction={formAction}
+        busy={pending}
+        dirty={dialog.dirty}
+        onDirtyChange={dialog.setDirty}
+        error={state.error}
+      >
         <input type="hidden" name="organization_id" value={organizationId} />
-        <div className="space-y-1.5">
-          <label
-            htmlFor="new-campus-name"
-            className="block text-sm font-medium text-ink"
-          >
-            Name
-          </label>
-          <input
-            id="new-campus-name"
-            name="name"
-            type="text"
-            required
-            className="w-full rounded-md border border-line bg-paper-elevated px-3 py-2 text-ink outline-none focus-visible:border-teal"
-          />
-        </div>
-        <div className="space-y-1.5">
-          <label
-            htmlFor="new-campus-code"
-            className="block text-sm font-medium text-ink"
-          >
-            Code (optional)
-          </label>
-          <input
-            id="new-campus-code"
-            name="code"
-            type="text"
-            className="w-full rounded-md border border-line bg-paper-elevated px-3 py-2 text-ink outline-none focus-visible:border-teal"
-          />
-        </div>
-        <div className="space-y-1.5">
-          <label
-            htmlFor="new-campus-phone"
-            className="block text-sm font-medium text-ink"
-          >
-            Phone (optional)
-          </label>
-          <input
-            id="new-campus-phone"
-            name="phone"
-            type="tel"
-            className="w-full rounded-md border border-line bg-paper-elevated px-3 py-2 text-ink outline-none focus-visible:border-teal"
-          />
-        </div>
-        <div className="space-y-1.5">
-          <label
-            htmlFor="new-campus-email"
-            className="block text-sm font-medium text-ink"
-          >
-            Email (optional)
-          </label>
-          <input
-            id="new-campus-email"
-            name="email"
-            type="email"
-            className="w-full rounded-md border border-line bg-paper-elevated px-3 py-2 text-ink outline-none focus-visible:border-teal"
-          />
-        </div>
-        <div className="space-y-1.5">
-          <label
-            htmlFor="new-campus-address"
-            className="block text-sm font-medium text-ink"
-          >
-            Address (optional)
-          </label>
-          <input
-            id="new-campus-address"
-            name="address_line"
-            type="text"
-            className="w-full rounded-md border border-line bg-paper-elevated px-3 py-2 text-ink outline-none focus-visible:border-teal"
-          />
-        </div>
-        {state.error ? (
-          <p role="alert" className="text-sm text-red-700">
-            {state.error}
-          </p>
-        ) : null}
-        {state.success ? (
-          <p role="status" className="text-sm text-teal">
-            {state.success}
-          </p>
-        ) : null}
-        <button
-          type="submit"
-          disabled={pending}
-          className="rounded-md border border-line bg-paper-elevated px-4 py-2 text-sm font-medium text-ink disabled:opacity-60"
-        >
-          {pending ? "Creating…" : "Create campus"}
-        </button>
-      </form>
-    </section>
+        <DialogField id="new-campus-name" name="name" label="Name" required />
+        <DialogField id="new-campus-code" name="code" label="Code (optional)" />
+        <DialogField
+          id="new-campus-phone"
+          name="phone"
+          label="Phone (optional)"
+          type="tel"
+        />
+        <DialogField
+          id="new-campus-email"
+          name="email"
+          label="Email (optional)"
+          type="email"
+        />
+        <DialogField
+          id="new-campus-address"
+          name="address_line"
+          label="Address (optional)"
+        />
+      </FormDialog>
+    </div>
   );
 }
 
-function EditCampusForm({
+function CampusRowItem({
   organizationId,
   campus,
+  canManage,
 }: {
   organizationId: string;
   campus: CampusRow;
+  canManage: boolean;
 }) {
   const [state, formAction, pending] = useActionState(
     updateCampusAction,
     initialState,
   );
+  const dialog = useActionDialog(state);
 
   return (
-    <li className="border-t border-line pt-6 first:border-t-0 first:pt-0">
-      <h3 className="font-medium text-ink">
-        {campus.name}
-        <span className="ml-2 text-sm font-normal text-muted">
-          {campus.status}
-        </span>
-      </h3>
-      <form action={formAction} className="mt-3 max-w-md space-y-3" noValidate>
+    <li className="flex flex-wrap items-center justify-between gap-3 border-t border-line py-4 first:border-t-0 first:pt-0">
+      <div>
+        <p className="font-medium text-ink">{campus.name}</p>
+        <p className="mt-0.5 text-sm text-muted">
+          {[campus.code, campus.phone, campus.email].filter(Boolean).join(" · ") ||
+            "No contact details"}
+        </p>
+      </div>
+      <div className="flex items-center gap-3">
+        <StatusBadge status={campus.status} />
+        {canManage ? (
+          <button
+            type="button"
+            onClick={dialog.openDialog}
+            className="text-sm text-teal underline-offset-2 hover:underline"
+          >
+            Edit
+          </button>
+        ) : null}
+      </div>
+      <FormDialog
+        open={dialog.open}
+        onClose={dialog.closeDialog}
+        title={`Edit ${campus.name}`}
+        description="Update campus details or archive this branch."
+        submitLabel="Save campus"
+        formAction={formAction}
+        busy={pending}
+        dirty={dialog.dirty}
+        onDirtyChange={dialog.setDirty}
+        error={state.error}
+      >
         <input type="hidden" name="organization_id" value={organizationId} />
         <input type="hidden" name="campus_id" value={campus.id} />
-        <div className="space-y-1.5">
-          <label
-            htmlFor={`campus-name-${campus.id}`}
-            className="block text-sm font-medium text-ink"
-          >
-            Name
-          </label>
-          <input
-            id={`campus-name-${campus.id}`}
-            name="name"
-            type="text"
-            required
-            defaultValue={campus.name}
-            className="w-full rounded-md border border-line bg-paper-elevated px-3 py-2 text-ink outline-none focus-visible:border-teal"
-          />
-        </div>
-        <div className="space-y-1.5">
-          <label
-            htmlFor={`campus-code-${campus.id}`}
-            className="block text-sm font-medium text-ink"
-          >
-            Code
-          </label>
-          <input
-            id={`campus-code-${campus.id}`}
-            name="code"
-            type="text"
-            defaultValue={campus.code ?? ""}
-            className="w-full rounded-md border border-line bg-paper-elevated px-3 py-2 text-ink outline-none focus-visible:border-teal"
-          />
-        </div>
-        <div className="space-y-1.5">
-          <label
-            htmlFor={`campus-phone-${campus.id}`}
-            className="block text-sm font-medium text-ink"
-          >
-            Phone
-          </label>
-          <input
-            id={`campus-phone-${campus.id}`}
-            name="phone"
-            type="tel"
-            defaultValue={campus.phone ?? ""}
-            className="w-full rounded-md border border-line bg-paper-elevated px-3 py-2 text-ink outline-none focus-visible:border-teal"
-          />
-        </div>
-        <div className="space-y-1.5">
-          <label
-            htmlFor={`campus-email-${campus.id}`}
-            className="block text-sm font-medium text-ink"
-          >
-            Email
-          </label>
-          <input
-            id={`campus-email-${campus.id}`}
-            name="email"
-            type="email"
-            defaultValue={campus.email ?? ""}
-            className="w-full rounded-md border border-line bg-paper-elevated px-3 py-2 text-ink outline-none focus-visible:border-teal"
-          />
-        </div>
-        <div className="space-y-1.5">
-          <label
-            htmlFor={`campus-address-${campus.id}`}
-            className="block text-sm font-medium text-ink"
-          >
-            Address
-          </label>
-          <input
-            id={`campus-address-${campus.id}`}
-            name="address_line"
-            type="text"
-            defaultValue={campus.addressLine ?? ""}
-            className="w-full rounded-md border border-line bg-paper-elevated px-3 py-2 text-ink outline-none focus-visible:border-teal"
-          />
-        </div>
-        <div className="space-y-1.5">
-          <label
-            htmlFor={`campus-status-${campus.id}`}
-            className="block text-sm font-medium text-ink"
-          >
-            Status
-          </label>
-          <select
-            id={`campus-status-${campus.id}`}
-            name="status"
-            defaultValue={campus.status}
-            className="w-full rounded-md border border-line bg-paper-elevated px-3 py-2 text-ink outline-none focus-visible:border-teal"
-          >
-            <option value="active">Active</option>
-            <option value="archived">Archived</option>
-          </select>
-        </div>
-        {state.error ? (
-          <p role="alert" className="text-sm text-red-700">
-            {state.error}
-          </p>
-        ) : null}
-        {state.success ? (
-          <p role="status" className="text-sm text-teal">
-            {state.success}
-          </p>
-        ) : null}
-        <button
-          type="submit"
-          disabled={pending}
-          className="rounded-md border border-line bg-paper-elevated px-4 py-2 text-sm font-medium text-ink disabled:opacity-60"
-        >
-          {pending ? "Saving…" : "Save campus"}
-        </button>
-      </form>
+        <DialogField
+          id={`campus-name-${campus.id}`}
+          name="name"
+          label="Name"
+          required
+          defaultValue={campus.name}
+        />
+        <DialogField
+          id={`campus-code-${campus.id}`}
+          name="code"
+          label="Code"
+          defaultValue={campus.code ?? ""}
+        />
+        <DialogField
+          id={`campus-phone-${campus.id}`}
+          name="phone"
+          label="Phone"
+          type="tel"
+          defaultValue={campus.phone ?? ""}
+        />
+        <DialogField
+          id={`campus-email-${campus.id}`}
+          name="email"
+          label="Email"
+          type="email"
+          defaultValue={campus.email ?? ""}
+        />
+        <DialogField
+          id={`campus-address-${campus.id}`}
+          name="address_line"
+          label="Address"
+          defaultValue={campus.addressLine ?? ""}
+        />
+        <DialogSelect
+          id={`campus-status-${campus.id}`}
+          name="status"
+          label="Status"
+          required
+          defaultValue={campus.status}
+          options={[
+            { value: "active", label: "Active" },
+            { value: "archived", label: "Archived" },
+          ]}
+        />
+      </FormDialog>
     </li>
   );
 }
@@ -286,26 +198,15 @@ export function CampusesPanel({
         <p role="status" className="mt-4 text-sm text-muted">
           No campuses yet.
         </p>
-      ) : canManage ? (
-        <ul className="mt-6 space-y-6">
+      ) : (
+        <ul className="mt-6 rounded-xl border border-line bg-paper-elevated px-4">
           {campuses.map((campus) => (
-            <EditCampusForm
+            <CampusRowItem
               key={campus.id}
               organizationId={organizationId}
               campus={campus}
+              canManage={canManage}
             />
-          ))}
-        </ul>
-      ) : (
-        <ul className="mt-4 space-y-3 text-sm text-ink-soft">
-          {campuses.map((campus) => (
-            <li key={campus.id}>
-              <span className="font-medium text-ink">{campus.name}</span>
-              {campus.code ? ` · ${campus.code}` : ""}
-              {` · ${campus.status}`}
-              {campus.phone ? ` · ${campus.phone}` : ""}
-              {campus.email ? ` · ${campus.email}` : ""}
-            </li>
           ))}
         </ul>
       )}

@@ -12,7 +12,12 @@ const initial: PlatformBootstrapActionState = {
   success: null,
 };
 
-export function BootstrapPlatformOperatorForm() {
+export function BootstrapPlatformOperatorForm({
+  presetKey = "",
+}: {
+  /** Optional prefilled key from a one-time operator setup URL (not advertised publicly). */
+  presetKey?: string;
+}) {
   const [state, formAction, pending] = useActionState(
     bootstrapFirstPlatformOperatorAction,
     initial,
@@ -27,9 +32,26 @@ export function BootstrapPlatformOperatorForm() {
       ) : null}
       <p className="text-sm text-muted">
         This promotes your signed-in account to the first platform operator.
-        After an active operator exists, this action is permanently disabled in
-        the database.
+        You must enter the server bootstrap secret. After any active operator
+        exists, bootstrap is permanently disabled in the database.
       </p>
+      <div className="space-y-1.5">
+        <label
+          htmlFor="bootstrap-secret"
+          className="block text-sm font-medium text-ink"
+        >
+          Bootstrap secret
+        </label>
+        <input
+          id="bootstrap-secret"
+          name="bootstrap_secret"
+          type="password"
+          autoComplete="off"
+          required
+          defaultValue={presetKey}
+          className="w-full rounded-md border border-line bg-paper-elevated px-3 py-2 text-ink outline-none focus-visible:border-teal"
+        />
+      </div>
       <button
         type="submit"
         disabled={pending}

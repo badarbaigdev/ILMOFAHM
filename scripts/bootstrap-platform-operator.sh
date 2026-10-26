@@ -8,7 +8,8 @@
 # The database rejects bootstrap once any active operator exists.
 # Never use production credentials or commit real emails/passwords.
 #
-# Prefer the in-app path when possible: sign in → /platform/bootstrap
+# Browser bootstrap (optional) requires PLATFORM_BOOTSTRAP_SECRET in apps/web/.env.local.
+# Prefer this script for local setup — /platform/bootstrap is not a public signup path.
 
 set -euo pipefail
 

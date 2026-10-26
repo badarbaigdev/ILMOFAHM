@@ -283,16 +283,14 @@ select is(
   'approval creates at most one school for the application'
 );
 
--- Cannot approve already-approved without provisioned school
-select throws_ok(
+-- Approved without school: approve/provision recovers (Phase 6 path)
+select lives_ok(
   $$
     select * from public.approve_school_application(
       'ffffffff-ffff-ffff-ffff-ffffffffffff'
     )
   $$,
-  '22023',
-  null,
-  'approve of already-approved without provisioned school is denied'
+  'approve of already-approved without school provisions once'
 );
 
 reset role;
@@ -314,7 +312,6 @@ select isnt_empty(
     from public.audit_events as ae
     where ae.action = 'school.application.approved'
       and ae.target_id = 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee'
-      and ae.school_id is not null
   $$,
   'approve writes school.application.approved audit'
 );

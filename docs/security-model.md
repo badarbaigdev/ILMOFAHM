@@ -18,7 +18,7 @@
 | --- | --- | --- |
 | Anonymous visitor | None | Public site; INSERT pending `school_applications` only |
 | Platform operator | `platform_operators` row (`status = active`) | Review applications; provision schools; manage platform |
-| School member | Active `school_memberships` (new) / `organization_memberships` (legacy `/app`) | School-scoped operations by role |
+| School member | Active `school_memberships` | School-scoped operations by role |
 | School owner | Membership role from provisioning/invite path | School setup and admin |
 
 ## Surfaces
@@ -28,8 +28,11 @@
 | Marketing pages | Public; no secrets; forms must not fake delivery |
 | Public registration | DB: anon INSERT pending apps only (trigger strips privileged columns); no anon SELECT; server action validation + rate limit |
 | Application review | Operators use `review_school_application` / `approve_school_application` only; direct UPDATE grant revoked; non-operators get 42501 |
-| `/platform/*` | Middleware session + active `platform_operators` check; page/`authorizePlatform` gates; RLS/RPCs. Bootstrap only while zero active operators. Unauthorized → `/platform/unauthorized` |
-| `/app/*` (current) | Middleware session + membership authorization + RLS |
+| School provisioning | `provision_school_from_application` only (idempotent); retries do not duplicate schools |
+| School invite accept | `accept_school_invitation` — email must match; membership only for invitation school |
+| `/platform/*` | Middleware session + active `platform_operators` check; page/`authorizePlatform` gates; RLS/RPCs. Web `/platform/bootstrap` also requires `PLATFORM_BOOTSTRAP_SECRET`; DB rejects bootstrap once any active operator exists. Unauthorized → `/platform/unauthorized` |
+| `/school/*` | Middleware session + `school_memberships` authorization + RLS; setup writes via school RPCs only; `complete_school_setup` activates tenant |
+| Legacy `/app/*` | Middleware redirects to `/school` (not a live product surface) |
 | Privileged RPCs / service client | Server-only; narrow use (e.g. controlled provisioning) |
 
 ## Onboarding-specific threats
@@ -41,6 +44,9 @@
 | Invite theft / reuse | Hashed tokens, expiry, single-use status, email binding |
 | Cross-school access | Membership + RLS; IDOR tests with two schools |
 | Operator privilege via profile metadata | Operators only via `platform_operators`, not profile fields |
+| Operator privilege via `/platform/bootstrap` URL | Secret-gated web form + DB one-shot; prefer local script; signup never grants operator |
+| SaaS payment/subscription tampering | Operator-only RPCs; payments not visible to school members; audited record/void |
+| Staff privilege escalation | School permission matrix + manager-only invite/status/role RPCs; owner not inviteable; self/last-owner protected |
 
 ## Secrets and environments
 
