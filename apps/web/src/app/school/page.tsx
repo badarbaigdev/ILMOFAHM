@@ -360,7 +360,7 @@ export default async function SchoolPortalPage({ searchParams }: PageProps) {
               <Link
                 key={card.href}
                 href={card.href}
-                className="rounded-xl border border-line bg-paper px-3 py-3 no-underline transition hover:border-teal/40"
+                className="card-interactive rounded-xl border border-line bg-paper px-3 py-3 no-underline"
               >
                 <p className="text-sm font-medium text-ink">{card.label}</p>
                 <p className="mt-1 text-xs text-muted">{card.hint}</p>

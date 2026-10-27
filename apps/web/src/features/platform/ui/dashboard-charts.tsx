@@ -54,7 +54,7 @@ export function StatCard({
     return (
       <a
         href={href}
-        className={`block rounded-2xl border p-4 no-underline transition hover:border-teal/40 ${toneClass}`}
+        className={`card-interactive block rounded-2xl border p-4 no-underline ${toneClass}`}
       >
         {inner}
       </a>

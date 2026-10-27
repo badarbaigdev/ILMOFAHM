@@ -412,7 +412,7 @@ function OverviewSection({
           <Link
             key={card.label}
             href={card.href}
-            className="rounded-2xl border border-line bg-paper-elevated p-4 no-underline transition hover:border-teal/40"
+            className="card-interactive rounded-2xl border border-line bg-paper-elevated p-4 no-underline"
           >
             <p className="text-xs font-medium tracking-wide text-muted uppercase">
               {card.label}
@@ -976,7 +976,7 @@ function LinksSection({ schoolId }: { schoolId: string }) {
           <li key={link.href}>
             <Link
               href={link.href}
-              className="block h-full rounded-2xl border border-line bg-paper-elevated p-4 no-underline transition hover:border-teal/40"
+              className="card-interactive block h-full rounded-2xl border border-line bg-paper-elevated p-4 no-underline"
             >
               <p className="text-sm font-semibold text-ink">{link.title}</p>
               <p className="mt-1 text-sm text-muted">{link.body}</p>
