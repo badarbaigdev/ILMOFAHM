@@ -44,8 +44,8 @@ export default async function PlatformSchoolsPage() {
             Schools
           </h1>
           <p className="mt-2 max-w-2xl text-sm text-muted">
-            Provisioned school tenants. Each school is created at most once per
-            approved application through the controlled provisioning path.
+            Provisioned tenants. Open a school to manage admins, reset profiles,
+            or start a time-limited support login to review the school console.
           </p>
         </div>
         <Link

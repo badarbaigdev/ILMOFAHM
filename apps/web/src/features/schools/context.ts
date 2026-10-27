@@ -7,6 +7,10 @@ import {
   type InstitutionType,
 } from "@/features/institution/mode";
 import {
+  getActiveSchoolSupportSession,
+  type SchoolSupportSessionRow,
+} from "@/features/platform/schools/support";
+import {
   isSchoolManagerRole,
   type SchoolRole,
 } from "@/features/schools/authorization";
@@ -52,6 +56,8 @@ export type SchoolContext = {
   campuses: SchoolCampusRecord[];
   canManage: boolean;
   needsSetup: boolean;
+  /** Present when a platform operator entered via support session. */
+  supportSession: SchoolSupportSessionRow | null;
 };
 
 type MembershipJoinRow = {
@@ -159,10 +165,6 @@ export async function loadSchoolContext(
     ];
   });
 
-  if (memberships.length === 0) {
-    return { memberships: [], active: null };
-  }
-
   const slug = requestedSchoolSlug?.trim().toLowerCase() ?? "";
   let selected =
     slug.length > 0
@@ -170,7 +172,9 @@ export async function loadSchoolContext(
       : undefined;
 
   if (slug.length > 0 && !selected) {
-    // Host asserts a tenant the user is not a member of — deny active context.
+    // Host asserts a tenant the user is not a member of — deny active context
+    // unless this is an active platform support session for that school.
+    // (Support access is resolved below via school id, not host slug alone.)
     return { memberships, active: null };
   }
 
@@ -179,12 +183,50 @@ export async function loadSchoolContext(
     memberships.find((m) => m.schoolId === requestedSchoolId) ??
     memberships[0];
 
+  let supportSession: SchoolSupportSessionRow | null = null;
+  let school: SchoolRecord | null = selected?.school ?? null;
+  let role: SchoolRole = selected?.role ?? "admin";
+  let schoolId = selected?.schoolId ?? "";
+
+  if (!selected && requestedSchoolId) {
+    supportSession = await getActiveSchoolSupportSession(
+      supabase,
+      requestedSchoolId,
+      userId,
+    );
+    if (supportSession) {
+      const { data: schoolRow, error: schoolError } = await supabase
+        .from("schools")
+        .select(
+          "id, name, slug, status, email, phone, address_line1, city, region, country_code, institution_type, default_locale, timezone, website_url, brand_display_name, brand_primary_color, brand_logo_url, working_days, setup_completed_at",
+        )
+        .eq("id", requestedSchoolId)
+        .maybeSingle();
+      if (schoolError || !schoolRow) {
+        throw new Error("Could not load school for support access.");
+      }
+      school = mapSchool(schoolRow as Record<string, unknown>);
+      schoolId = school.id;
+      role = "admin";
+    }
+  } else if (selected) {
+    supportSession = await getActiveSchoolSupportSession(
+      supabase,
+      selected.schoolId,
+      userId,
+    );
+  }
+
+  if (!school || !schoolId) {
+    return { memberships, active: null };
+  }
+
   const { data: campusRows, error: campusError } = await supabase
     .from("school_campuses")
     .select(
       "id, school_id, name, code, phone, email, address_line1, city, status, is_default",
     )
-    .eq("school_id", selected.schoolId)
+    .eq("school_id", schoolId)
     .order("created_at", { ascending: true });
 
   if (campusError) {
@@ -194,19 +236,21 @@ export async function loadSchoolContext(
   const campuses = (campusRows ?? []).map((row) =>
     mapCampus(row as Record<string, unknown>),
   );
-  const canManage = isSchoolManagerRole(selected.role);
+  const canManage =
+    isSchoolManagerRole(role) || supportSession !== null;
   const needsSetup =
-    selected.school.status === "pending_setup" ||
-    selected.school.setupCompletedAt == null;
+    school.status === "pending_setup" || school.setupCompletedAt == null;
 
   return {
     memberships,
     active: {
-      school: selected.school,
-      membership: { role: selected.role, schoolId: selected.schoolId },
+      school,
+      membership: { role, schoolId },
       campuses,
       canManage,
-      needsSetup,
+      // Support review should not force operators into setup wizard.
+      needsSetup: supportSession ? false : needsSetup,
+      supportSession,
     },
   };
 }

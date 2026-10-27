@@ -9,6 +9,8 @@ export const PLATFORM_PERMISSIONS = [
   "platform.applications.read",
   "platform.applications.manage",
   "platform.schools.read",
+  "platform.schools.manage_members",
+  "platform.schools.support_access",
   "platform.operators.read",
   "platform.operators.manage",
   "platform.subscriptions.read",

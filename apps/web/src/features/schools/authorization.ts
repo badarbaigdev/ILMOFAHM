@@ -2,6 +2,7 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { getActiveSchoolSupportSession } from "@/features/platform/schools/support";
 import {
   schoolRoleHasPermission,
   type SchoolPermission,
@@ -82,6 +83,7 @@ export async function requireSchoolMembership(
 
 /**
  * Authorize a school-scoped permission from trusted membership + matrix.
+ * Active platform support sessions act as school admin for the granted school.
  */
 export async function authorizeSchool(
   supabase: SupabaseClient,
@@ -89,14 +91,48 @@ export async function authorizeSchool(
   schoolId: string,
   permission: SchoolPermission,
 ): Promise<SchoolMembership> {
-  const membership = await requireSchoolMembership(supabase, userId, schoolId);
-  if (!schoolRoleHasPermission(membership.role, permission)) {
+  try {
+    const membership = await requireSchoolMembership(
+      supabase,
+      userId,
+      schoolId,
+    );
+    if (!schoolRoleHasPermission(membership.role, permission)) {
+      throw new SchoolAuthorizationError(
+        "You do not have permission to perform this school action.",
+        "forbidden",
+      );
+    }
+    return membership;
+  } catch (error) {
+    if (!isSchoolAuthorizationError(error) || error.code !== "forbidden") {
+      throw error;
+    }
+  }
+
+  const support = await getActiveSchoolSupportSession(
+    supabase,
+    schoolId,
+    userId,
+  );
+  if (!support) {
+    throw new SchoolAuthorizationError(
+      "You do not have access to this school.",
+      "forbidden",
+    );
+  }
+  if (!schoolRoleHasPermission("admin", permission)) {
     throw new SchoolAuthorizationError(
       "You do not have permission to perform this school action.",
       "forbidden",
     );
   }
-  return membership;
+  return {
+    schoolId,
+    userId,
+    role: "admin",
+    status: "active",
+  };
 }
 
 export async function canSchool(

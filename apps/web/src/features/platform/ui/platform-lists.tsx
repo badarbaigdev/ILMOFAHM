@@ -160,10 +160,15 @@ export function PlatformSchoolsTable({
           id: "name",
           header: "School",
           cell: (row) => (
-            <PersonCell
-              name={row.name}
-              secondary={row.slug ? `/${row.slug}` : row.id.slice(0, 8)}
-            />
+            <Link
+              href={`/platform/schools/${row.id}`}
+              className="no-underline"
+            >
+              <PersonCell
+                name={row.name}
+                secondary={row.slug ? `/${row.slug}` : row.id.slice(0, 8)}
+              />
+            </Link>
           ),
         },
         {
@@ -192,17 +197,24 @@ export function PlatformSchoolsTable({
         {
           id: "action",
           header: "Action",
-          cell: (row) =>
-            row.applicationId ? (
+          cell: (row) => (
+            <div className="flex flex-wrap gap-3">
               <Link
-                href={`/platform/requests/${row.applicationId}`}
+                href={`/platform/schools/${row.id}`}
                 className="text-sm text-teal no-underline hover:underline"
               >
-                Application
+                Manage
               </Link>
-            ) : (
-              <span className="text-muted">—</span>
-            ),
+              {row.applicationId ? (
+                <Link
+                  href={`/platform/requests/${row.applicationId}`}
+                  className="text-sm text-muted no-underline hover:underline"
+                >
+                  Application
+                </Link>
+              ) : null}
+            </div>
+          ),
         },
       ]}
     />

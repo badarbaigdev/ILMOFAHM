@@ -1,6 +1,8 @@
 import { ConsoleShell } from "@/components/shell/ConsoleShell";
 import { SCHOOL_CONSOLE_NAV } from "@/components/shell/console-nav";
 import { signOutAction } from "@/features/auth/actions";
+import { SchoolSupportBanner } from "@/features/platform/schools/support-banner";
+import { listOpenSupportSessionsForOperator } from "@/features/platform/schools/support";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export default async function SchoolLayout({
@@ -10,6 +12,12 @@ export default async function SchoolLayout({
 }) {
   let userLabel = "School user";
   let userRole = "Member";
+  let supportBanner: {
+    schoolId: string;
+    schoolName: string;
+    expiresAt: string;
+    reason: string;
+  } | null = null;
 
   try {
     const supabase = await createServerSupabaseClient();
@@ -38,6 +46,26 @@ export default async function SchoolLayout({
       if (membership?.role) {
         userRole = String(membership.role);
       }
+
+      const sessions = await listOpenSupportSessionsForOperator(
+        supabase,
+        user.id,
+      ).catch(() => []);
+      const open = sessions[0];
+      if (open) {
+        const { data: school } = await supabase
+          .from("schools")
+          .select("name")
+          .eq("id", open.schoolId)
+          .maybeSingle();
+        supportBanner = {
+          schoolId: open.schoolId,
+          schoolName: school?.name ? String(school.name) : "School",
+          expiresAt: open.expiresAt,
+          reason: open.reason,
+        };
+        userRole = "Platform support";
+      }
     }
   } catch {
     // Layout still renders; page-level auth will redirect.
@@ -51,6 +79,14 @@ export default async function SchoolLayout({
       userRole={userRole}
       signOutAction={signOutAction}
     >
+      {supportBanner ? (
+        <SchoolSupportBanner
+          schoolId={supportBanner.schoolId}
+          schoolName={supportBanner.schoolName}
+          expiresAt={supportBanner.expiresAt}
+          reason={supportBanner.reason}
+        />
+      ) : null}
       {children}
     </ConsoleShell>
   );
