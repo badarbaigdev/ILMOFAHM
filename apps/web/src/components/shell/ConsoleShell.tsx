@@ -131,7 +131,7 @@ export function ConsoleShell({
 
       <div className="flex min-w-0 flex-1 flex-col">
         {variant === "platform" ? (
-          <header className="flex flex-wrap items-center gap-3 border-b border-line bg-paper-elevated px-4 py-3 sm:px-6">
+          <header className="flex flex-wrap items-center gap-3 border-b border-line bg-paper-elevated px-3 py-3 sm:px-4 lg:px-5">
             <div className="min-w-0 flex-1">
               <label className="sr-only" htmlFor="console-search">
                 Search
@@ -159,7 +159,7 @@ export function ConsoleShell({
             </form>
           </header>
         ) : (
-          <header className="flex items-center justify-end border-b border-line bg-paper-elevated px-4 py-3 sm:px-6 lg:hidden">
+          <header className="flex items-center justify-end border-b border-line bg-paper-elevated px-3 py-3 sm:px-4 lg:hidden">
             <form action={signOutAction}>
               <button
                 type="submit"
@@ -173,7 +173,7 @@ export function ConsoleShell({
 
         <nav
           aria-label="Mobile modules"
-          className="flex gap-2 overflow-x-auto border-b border-line bg-paper-elevated px-4 py-2 lg:hidden"
+          className="flex gap-2 overflow-x-auto border-b border-line bg-paper-elevated px-3 py-2 sm:px-4 lg:hidden"
         >
           {flatItems.map((item) => {
             const active = isConsoleNavActive(pathname, item);

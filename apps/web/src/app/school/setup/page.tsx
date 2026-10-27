@@ -62,7 +62,7 @@ export default async function SchoolSetupPage({ searchParams }: PageProps) {
       <main
         id="main-content"
         tabIndex={-1}
-        className="mx-auto w-full max-w-3xl px-6 py-16 outline-none sm:px-10"
+        className="w-full max-w-none px-3 py-6 outline-none sm:px-4 lg:px-5"
       >
         <h1 className="font-display text-3xl tracking-tight text-ink">
           School setup
@@ -79,7 +79,7 @@ export default async function SchoolSetupPage({ searchParams }: PageProps) {
       <main
         id="main-content"
         tabIndex={-1}
-        className="mx-auto w-full max-w-3xl px-6 py-16 outline-none sm:px-10"
+        className="w-full max-w-none px-3 py-6 outline-none sm:px-4 lg:px-5"
       >
         <h1 className="font-display text-3xl tracking-tight text-ink">
           School setup
@@ -114,7 +114,7 @@ export default async function SchoolSetupPage({ searchParams }: PageProps) {
     <main
       id="main-content"
       tabIndex={-1}
-      className="mx-auto w-full max-w-3xl px-6 py-16 outline-none sm:px-10"
+      className="w-full max-w-none px-3 py-6 outline-none sm:px-4 lg:px-5"
     >
       <p className="text-[0.65rem] font-semibold tracking-[0.2em] text-teal uppercase">
         School portal

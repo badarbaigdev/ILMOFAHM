@@ -502,7 +502,7 @@ export function SchoolAttendancePanel({
               {/* 5. Bulk actions and save/submit */}
               {isDraft && canManage ? (
                 <div className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-paper/95 px-4 py-3 backdrop-blur">
-                  <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">
+                  <div className="mx-auto flex w-full max-w-none flex-wrap items-center justify-between gap-3 px-3 sm:px-4 lg:px-5">
                     <div className="flex flex-wrap gap-2">
                       <button
                         type="button"

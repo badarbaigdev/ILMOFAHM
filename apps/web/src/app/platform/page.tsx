@@ -72,7 +72,7 @@ export default async function PlatformDashboardPage() {
       <main
         id="main-content"
         tabIndex={-1}
-        className="mx-auto w-full max-w-6xl px-4 py-8 outline-none sm:px-6 lg:px-8"
+        className="w-full max-w-none px-3 py-6 outline-none sm:px-4 lg:px-5"
       >
         <h1 className="text-2xl font-semibold tracking-tight text-ink">
           Dashboard
@@ -129,7 +129,7 @@ export default async function PlatformDashboardPage() {
     <main
       id="main-content"
       tabIndex={-1}
-      className="mx-auto w-full max-w-6xl px-4 py-8 outline-none sm:px-6 lg:px-8"
+      className="w-full max-w-none px-3 py-6 outline-none sm:px-4 lg:px-5"
     >
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>

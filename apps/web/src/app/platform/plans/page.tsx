@@ -15,7 +15,7 @@ export default async function PlatformPlansPage() {
       <main
         id="main-content"
         tabIndex={-1}
-        className="mx-auto w-full max-w-6xl px-4 py-8 outline-none sm:px-6 lg:px-8"
+        className="w-full max-w-none px-3 py-6 outline-none sm:px-4 lg:px-5"
       >
         <h1 className="text-2xl font-semibold tracking-tight text-ink">Plans</h1>
         <p role="alert" className="mt-4 text-sm text-red-700">
@@ -29,7 +29,7 @@ export default async function PlatformPlansPage() {
     <main
       id="main-content"
       tabIndex={-1}
-      className="mx-auto w-full max-w-6xl px-4 py-8 outline-none sm:px-6 lg:px-8"
+      className="w-full max-w-none px-3 py-6 outline-none sm:px-4 lg:px-5"
     >
       <p className="text-[0.65rem] font-semibold tracking-[0.2em] text-teal uppercase">
         Superadmin

@@ -37,7 +37,7 @@ export default async function PlatformSubscriptionDetailPage({
       <main
         id="main-content"
         tabIndex={-1}
-        className="mx-auto w-full max-w-3xl px-6 py-12 outline-none sm:px-10 sm:py-16"
+        className="w-full max-w-none px-3 py-6 outline-none sm:px-4 lg:px-5"
       >
         <h1 className="font-display text-3xl tracking-tight text-ink">
           Subscription
@@ -53,7 +53,7 @@ export default async function PlatformSubscriptionDetailPage({
     <main
       id="main-content"
       tabIndex={-1}
-      className="mx-auto w-full max-w-3xl px-6 py-12 outline-none sm:px-10 sm:py-16"
+      className="w-full max-w-none px-3 py-6 outline-none sm:px-4 lg:px-5"
     >
       <p className="text-sm">
         <Link

@@ -157,12 +157,12 @@ export function SchoolAdminPreviewShell({
       <div className="flex min-w-0 flex-1 flex-col">
         <div
           role="status"
-          className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-950 sm:px-6"
+          className="border-b border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950 sm:px-4 lg:px-5"
         >
           Hardcoded preview for layout review. Forms do not save to a live school.
         </div>
 
-        <div className="border-b border-line bg-paper-elevated px-4 py-4 sm:px-6">
+        <div className="border-b border-line bg-paper-elevated px-3 py-4 sm:px-4 lg:px-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               {breadcrumbs && breadcrumbs.length > 0 ? (
@@ -179,7 +179,7 @@ export function SchoolAdminPreviewShell({
         {/* Mobile nav */}
         <nav
           aria-label="School modules mobile"
-          className="flex gap-2 overflow-x-auto border-b border-line bg-paper-elevated px-4 py-2 lg:hidden"
+          className="flex gap-2 overflow-x-auto border-b border-line bg-paper-elevated px-3 py-2 sm:px-4 lg:hidden"
         >
           {NAV_GROUPS.flatMap((g) => g.items).map((item) => {
             const active = isActive(pathname, item);
@@ -202,7 +202,7 @@ export function SchoolAdminPreviewShell({
         <main
           id="main-content"
           tabIndex={-1}
-          className="flex-1 outline-none px-4 py-6 sm:px-6"
+          className="flex-1 px-3 py-6 outline-none sm:px-4 lg:px-5"
         >
           {children}
         </main>

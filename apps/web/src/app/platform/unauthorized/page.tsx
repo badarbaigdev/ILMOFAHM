@@ -35,7 +35,7 @@ export default async function PlatformUnauthorizedPage() {
     <main
       id="main-content"
       tabIndex={-1}
-      className="mx-auto w-full max-w-xl px-6 py-16 outline-none sm:px-10"
+      className="w-full max-w-xl px-3 py-6 outline-none sm:px-4 lg:px-5"
     >
       <p className="text-[0.65rem] font-semibold tracking-[0.2em] text-teal uppercase">
         Platform access
