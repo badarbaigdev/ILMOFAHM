@@ -130,34 +130,46 @@ export function ConsoleShell({
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex flex-wrap items-center gap-3 border-b border-line bg-paper-elevated px-4 py-3 sm:px-6">
-          <div className="min-w-0 flex-1">
-            <label className="sr-only" htmlFor="console-search">
-              Search
-            </label>
-            <input
-              id="console-search"
-              type="search"
-              placeholder={
-                variant === "platform"
-                  ? "Search schools, requests…"
-                  : "Search students, staff, classes…"
-              }
-              className="w-full max-w-md rounded-md border border-line bg-paper px-3 py-2 text-sm text-ink"
-            />
-          </div>
-          <Link
-            href="/"
-            className="text-sm text-muted no-underline hover:text-ink"
-          >
-            Public site
-          </Link>
-          <form action={signOutAction} className="lg:hidden">
-            <button type="submit" className="text-sm text-ink underline-offset-2 hover:underline">
-              Sign out
-            </button>
-          </form>
-        </header>
+        {variant === "platform" ? (
+          <header className="flex flex-wrap items-center gap-3 border-b border-line bg-paper-elevated px-4 py-3 sm:px-6">
+            <div className="min-w-0 flex-1">
+              <label className="sr-only" htmlFor="console-search">
+                Search
+              </label>
+              <input
+                id="console-search"
+                type="search"
+                placeholder="Search schools, requests…"
+                className="w-full max-w-md rounded-md border border-line bg-paper px-3 py-2 text-sm text-ink"
+              />
+            </div>
+            <Link
+              href="/"
+              className="text-sm text-muted no-underline hover:text-ink"
+            >
+              Public site
+            </Link>
+            <form action={signOutAction} className="lg:hidden">
+              <button
+                type="submit"
+                className="text-sm text-ink underline-offset-2 hover:underline"
+              >
+                Sign out
+              </button>
+            </form>
+          </header>
+        ) : (
+          <header className="flex items-center justify-end border-b border-line bg-paper-elevated px-4 py-3 sm:px-6 lg:hidden">
+            <form action={signOutAction}>
+              <button
+                type="submit"
+                className="text-sm text-ink underline-offset-2 hover:underline"
+              >
+                Sign out
+              </button>
+            </form>
+          </header>
+        )}
 
         <nav
           aria-label="Mobile modules"
