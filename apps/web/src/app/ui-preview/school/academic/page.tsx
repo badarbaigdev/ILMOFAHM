@@ -1,4 +1,4 @@
-import { PageSectionNav } from "@/components/shell/PageSectionNav";
+import { SubTabs } from "@/components/ui/sub-tabs";
 import { SchoolAcademicPanel } from "@/features/schools/academic/academic-panel";
 import { SchoolAdminPreviewShell } from "@/features/schools/ui-preview/admin-shell";
 import {
@@ -11,9 +11,12 @@ import {
 } from "@/features/schools/ui-preview/fixtures";
 import { assertUiPreviewAllowed } from "@/features/schools/ui-preview/guard";
 
-const ACADEMIC_SECTIONS = [
-  { id: "school-academic-years-heading", label: "Years" },
-  { id: "school-structure-heading", label: "Structure" },
+const SECTIONS = [
+  { id: "overview", label: "Overview" },
+  { id: "grades", label: "Grades" },
+  { id: "years", label: "Years" },
+  { id: "subjects", label: "Subjects" },
+  { id: "links", label: "Workflows" },
 ] as const;
 
 export const metadata = {
@@ -25,13 +28,21 @@ export default function SchoolAcademicUiPreviewPage() {
   return (
     <SchoolAdminPreviewShell
       pathname="/ui-preview/school/academic"
-      title="Academic"
-      breadcrumbs={["Dashboard", "Classes / academic"]}
+      title="Classes"
+      breadcrumbs={["Dashboard", "Classes"]}
     >
-      <p className="mb-4 max-w-2xl text-sm text-muted">
-        Years, terms, grades, sections, and subjects for {previewSchool.name}.
+      <p className="mb-2 max-w-2xl text-sm text-muted">
+        Years, grades, sections, and subjects for {previewSchool.name}.
       </p>
-      <PageSectionNav sections={[...ACADEMIC_SECTIONS]} />
+      <SubTabs
+        label="Classes sections"
+        activeId="grades"
+        items={SECTIONS.map((section) => ({
+          id: section.id,
+          label: section.label,
+          href: `#${section.id}`,
+        }))}
+      />
       <div className="mt-6">
         <SchoolAcademicPanel
           schoolId={previewSchool.id}
@@ -40,8 +51,10 @@ export default function SchoolAcademicUiPreviewPage() {
           grades={previewGrades}
           sections={previewSections}
           subjects={previewSubjects}
+          enrolments={[]}
           canManage
           supportsSchoolStructure
+          activeSection="grades"
         />
       </div>
     </SchoolAdminPreviewShell>

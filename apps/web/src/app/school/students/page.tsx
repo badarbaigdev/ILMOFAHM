@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { SubTabs } from "@/components/ui/sub-tabs";
 import {
   listSchoolAcademicYears,
   listSchoolGrades,
@@ -25,8 +26,16 @@ import {
 import { getRequestSchoolSlug } from "@/lib/tenancy/request";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
+const STUDENT_SECTIONS = [
+  { id: "directory", label: "Directory" },
+  { id: "enrolments", label: "Enrolments" },
+  { id: "import", label: "Bulk import" },
+] as const;
+
+type StudentSectionId = (typeof STUDENT_SECTIONS)[number]["id"];
+
 type PageProps = {
-  searchParams: Promise<{ school?: string; import?: string }>;
+  searchParams: Promise<{ school?: string; import?: string; section?: string }>;
 };
 
 export default async function SchoolStudentsPage({ searchParams }: PageProps) {
@@ -34,6 +43,7 @@ export default async function SchoolStudentsPage({ searchParams }: PageProps) {
   const requestedSchoolId = params.school?.trim() ?? "";
   const hostSchoolSlug = await getRequestSchoolSlug();
   const importBatchId = params.import?.trim() ?? "";
+  const sectionParam = params.section?.trim() ?? "";
   const supabase = await createServerSupabaseClient();
   const {
     data: { user },
@@ -59,9 +69,9 @@ export default async function SchoolStudentsPage({ searchParams }: PageProps) {
       <main
         id="main-content"
         tabIndex={-1}
-        className="mx-auto w-full max-w-3xl px-6 py-16 outline-none sm:px-10"
+        className="mx-auto w-full max-w-6xl px-4 py-8 outline-none sm:px-6 lg:px-8"
       >
-        <h1 className="font-display text-3xl tracking-tight text-ink">
+        <h1 className="text-2xl font-semibold tracking-tight text-ink">
           Students
         </h1>
         <p role="alert" className="mt-4 text-sm text-red-700">
@@ -76,9 +86,9 @@ export default async function SchoolStudentsPage({ searchParams }: PageProps) {
       <main
         id="main-content"
         tabIndex={-1}
-        className="mx-auto w-full max-w-3xl px-6 py-16 outline-none sm:px-10"
+        className="mx-auto w-full max-w-6xl px-4 py-8 outline-none sm:px-6 lg:px-8"
       >
-        <h1 className="font-display text-3xl tracking-tight text-ink">
+        <h1 className="text-2xl font-semibold tracking-tight text-ink">
           Students
         </h1>
         <p className="mt-4 text-sm text-muted">
@@ -98,9 +108,9 @@ export default async function SchoolStudentsPage({ searchParams }: PageProps) {
         <main
           id="main-content"
           tabIndex={-1}
-          className="mx-auto w-full max-w-3xl px-6 py-16 outline-none sm:px-10"
+          className="mx-auto w-full max-w-6xl px-4 py-8 outline-none sm:px-6 lg:px-8"
         >
-          <h1 className="font-display text-3xl tracking-tight text-ink">
+          <h1 className="text-2xl font-semibold tracking-tight text-ink">
             Students
           </h1>
           <p role="alert" className="mt-4 text-sm text-red-700">
@@ -140,9 +150,9 @@ export default async function SchoolStudentsPage({ searchParams }: PageProps) {
       <main
         id="main-content"
         tabIndex={-1}
-        className="mx-auto w-full max-w-3xl px-6 py-16 outline-none sm:px-10"
+        className="mx-auto w-full max-w-6xl px-4 py-8 outline-none sm:px-6 lg:px-8"
       >
-        <h1 className="font-display text-3xl tracking-tight text-ink">
+        <h1 className="text-2xl font-semibold tracking-tight text-ink">
           Students
         </h1>
         <p role="alert" className="mt-4 text-sm text-red-700">
@@ -165,9 +175,9 @@ export default async function SchoolStudentsPage({ searchParams }: PageProps) {
         <main
           id="main-content"
           tabIndex={-1}
-          className="mx-auto w-full max-w-3xl px-6 py-16 outline-none sm:px-10"
+          className="mx-auto w-full max-w-6xl px-4 py-8 outline-none sm:px-6 lg:px-8"
         >
-          <h1 className="font-display text-3xl tracking-tight text-ink">
+          <h1 className="text-2xl font-semibold tracking-tight text-ink">
             Students
           </h1>
           <p role="alert" className="mt-4 text-sm text-red-700">
@@ -177,6 +187,16 @@ export default async function SchoolStudentsPage({ searchParams }: PageProps) {
       );
     }
   }
+
+  const resolvedSection: StudentSectionId =
+    STUDENT_SECTIONS.some((s) => s.id === sectionParam)
+      ? (sectionParam as StudentSectionId)
+      : activeBatch
+        ? "import"
+        : "directory";
+
+  const schoolQuery = `school=${encodeURIComponent(active.school.id)}`;
+  const enrolledCount = enrolments.filter((e) => e.status === "enrolled").length;
 
   return (
     <main
@@ -192,34 +212,63 @@ export default async function SchoolStudentsPage({ searchParams }: PageProps) {
           {active.school.name}
         </Link>
         <span className="mx-1.5 text-line">/</span>
-        Student list
+        Students
       </p>
       <div className="mt-3">
         <h1 className="text-2xl font-semibold tracking-tight text-ink">
-          Student list
+          Students
         </h1>
         <p className="mt-1 max-w-2xl text-sm text-muted">
-          Records, year enrolments, and CSV import for {active.school.name}.
+          Directory, enrolments, and CSV import for {active.school.name}.
         </p>
       </div>
 
+      <SubTabs
+        label="Student sections"
+        activeId={resolvedSection}
+        items={[
+          {
+            id: "directory",
+            label: "Directory",
+            href: `/school/students?${schoolQuery}&section=directory`,
+            count: students.length,
+          },
+          {
+            id: "enrolments",
+            label: "Enrolments",
+            href: `/school/students?${schoolQuery}&section=enrolments`,
+            count: enrolledCount,
+          },
+          {
+            id: "import",
+            label: "Bulk import",
+            href: `/school/students?${schoolQuery}&section=import`,
+            count: importBatches.length,
+          },
+        ]}
+      />
+
       <div className="mt-8">
-        <SchoolStudentsPanel
-          schoolId={active.school.id}
-          students={students}
-          enrolments={enrolments}
-          years={years}
-          grades={grades}
-          sections={sections}
-          canManage={canManage}
-        />
-        <SchoolStudentImportPanel
-          schoolId={active.school.id}
-          batches={importBatches}
-          activeBatch={activeBatch}
-          activeRows={activeRows}
-          canManage={canManage}
-        />
+        {resolvedSection === "import" ? (
+          <SchoolStudentImportPanel
+            schoolId={active.school.id}
+            batches={importBatches}
+            activeBatch={activeBatch}
+            activeRows={activeRows}
+            canManage={canManage}
+          />
+        ) : (
+          <SchoolStudentsPanel
+            schoolId={active.school.id}
+            students={students}
+            enrolments={enrolments}
+            years={years}
+            grades={grades}
+            sections={sections}
+            canManage={canManage}
+            activeSection={resolvedSection}
+          />
+        )}
       </div>
     </main>
   );

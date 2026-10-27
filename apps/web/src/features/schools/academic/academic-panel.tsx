@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import Link from "next/link";
+import { useActionState, useMemo, useState } from "react";
 
 import {
   DialogField,
@@ -25,11 +26,20 @@ import type {
   SchoolSectionRow,
   SchoolSubjectRow,
 } from "@/features/schools/academic/queries";
+import type { SchoolEnrolmentRow } from "@/features/schools/students/queries";
+import { StatusBadge } from "@/features/schools/ui/data-table";
 
 const initialState: SchoolAcademicActionState = {
   error: null,
   success: null,
 };
+
+export type AcademicPanelSection =
+  | "overview"
+  | "grades"
+  | "years"
+  | "subjects"
+  | "links";
 
 type AcademicPanelProps = {
   schoolId: string;
@@ -38,8 +48,10 @@ type AcademicPanelProps = {
   grades: SchoolGradeRow[];
   sections: SchoolSectionRow[];
   subjects: SchoolSubjectRow[];
+  enrolments: SchoolEnrolmentRow[];
   canManage: boolean;
   supportsSchoolStructure: boolean;
+  activeSection: AcademicPanelSection;
 };
 
 function CreateYearForm({ schoolId }: { schoolId: string }) {
@@ -50,7 +62,7 @@ function CreateYearForm({ schoolId }: { schoolId: string }) {
   const dialog = useActionDialog(state);
 
   return (
-    <div className="mt-6">
+    <>
       <button
         type="button"
         onClick={dialog.openDialog}
@@ -115,7 +127,7 @@ function CreateYearForm({ schoolId }: { schoolId: string }) {
           Set as current year
         </label>
       </FormDialog>
-    </div>
+    </>
   );
 }
 
@@ -142,30 +154,33 @@ function YearCard({
   const termDialog = useActionDialog(termState);
 
   return (
-    <li className="border-t border-line/60 py-6">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h3 className="font-display text-xl text-ink">
-          {year.name}
-          {year.isCurrent ? (
-            <span className="ml-2 text-xs font-sans font-semibold tracking-wide text-teal uppercase">
-              Current
-            </span>
-          ) : null}
-        </h3>
-        <div className="flex flex-wrap items-center gap-3">
-          <p className="text-sm text-muted">
-            {year.startsOn} → {year.endsOn} · {year.status}
+    <article className="rounded-2xl border border-line bg-paper-elevated p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="text-lg font-semibold tracking-tight text-ink">
+              {year.name}
+            </h3>
+            {year.isCurrent ? (
+              <span className="rounded-full bg-teal/10 px-2 py-0.5 text-[0.65rem] font-semibold tracking-wide text-teal uppercase">
+                Current
+              </span>
+            ) : null}
+            <StatusBadge status={year.status} />
+          </div>
+          <p className="mt-1 text-sm text-muted">
+            {year.startsOn} → {year.endsOn}
           </p>
-          {canManage ? (
-            <button
-              type="button"
-              onClick={editDialog.openDialog}
-              className="text-sm text-teal underline-offset-2 hover:underline"
-            >
-              Edit
-            </button>
-          ) : null}
         </div>
+        {canManage ? (
+          <button
+            type="button"
+            onClick={editDialog.openDialog}
+            className="rounded-md border border-line px-3 py-1.5 text-sm font-medium text-ink"
+          >
+            Edit year
+          </button>
+        ) : null}
       </div>
 
       {canManage ? (
@@ -232,95 +247,198 @@ function YearCard({
         </FormDialog>
       ) : null}
 
-      <div className="mt-6">
-        <h4 className="text-sm font-semibold tracking-wide text-ink uppercase">
-          Terms
-        </h4>
+      <div className="mt-5 border-t border-line/70 pt-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h4 className="text-xs font-semibold tracking-wide text-muted uppercase">
+            Terms ({terms.length})
+          </h4>
+          {canManage ? (
+            <button
+              type="button"
+              onClick={termDialog.openDialog}
+              className="text-sm font-medium text-teal underline-offset-2 hover:underline"
+            >
+              + Add term
+            </button>
+          ) : null}
+        </div>
+
         {terms.length === 0 ? (
-          <p className="mt-2 text-sm text-muted">No terms yet.</p>
+          <p className="mt-3 text-sm text-muted">
+            No terms yet. Add Term 1 / Term 2 to plan the year.
+          </p>
         ) : (
-          <ul className="mt-2 space-y-1 text-sm text-ink">
+          <ul className="mt-3 space-y-2">
             {terms.map((term) => (
-              <li key={term.id}>
-                {term.sortOrder}. {term.name} ({term.startsOn} → {term.endsOn})
+              <li
+                key={term.id}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line bg-paper px-3 py-2 text-sm"
+              >
+                <span className="font-medium text-ink">
+                  <span className="mr-2 text-muted">{term.sortOrder}.</span>
+                  {term.name}
+                </span>
+                <span className="text-muted">
+                  {term.startsOn} → {term.endsOn}
+                </span>
               </li>
             ))}
           </ul>
         )}
 
         {canManage ? (
-          <div className="mt-4">
-            <button
-              type="button"
-              onClick={termDialog.openDialog}
-              className="rounded-md border border-line px-3 py-1.5 text-sm font-medium text-ink"
-            >
-              + Add term
-            </button>
-            <FormDialog
-              open={termDialog.open}
-              onClose={termDialog.closeDialog}
-              title="Add term"
-              description={`Add a term within ${year.name}.`}
-              submitLabel="Add term"
-              formAction={termAction}
-              busy={termPending}
-              dirty={termDialog.dirty}
-              onDirtyChange={termDialog.setDirty}
-              error={termState.error}
-            >
-              <input type="hidden" name="academic_year_id" value={year.id} />
-              <input type="hidden" name="school_id" value={schoolId} />
+          <FormDialog
+            open={termDialog.open}
+            onClose={termDialog.closeDialog}
+            title="Add term"
+            description={`Add a term within ${year.name}.`}
+            submitLabel="Add term"
+            formAction={termAction}
+            busy={termPending}
+            dirty={termDialog.dirty}
+            onDirtyChange={termDialog.setDirty}
+            error={termState.error}
+          >
+            <input type="hidden" name="academic_year_id" value={year.id} />
+            <input type="hidden" name="school_id" value={schoolId} />
+            <DialogField
+              id={`school-term-name-${year.id}`}
+              name="name"
+              label="Term name"
+              required
+              placeholder="Term 1"
+            />
+            <div className="grid grid-cols-2 gap-3">
               <DialogField
-                id={`school-term-name-${year.id}`}
-                name="name"
-                label="Term name"
+                id={`school-term-starts-${year.id}`}
+                name="starts_on"
+                label="Starts"
+                type="date"
                 required
-                placeholder="Term 1"
               />
-              <div className="grid grid-cols-2 gap-3">
-                <DialogField
-                  id={`school-term-starts-${year.id}`}
-                  name="starts_on"
-                  label="Starts"
-                  type="date"
-                  required
-                />
-                <DialogField
-                  id={`school-term-ends-${year.id}`}
-                  name="ends_on"
-                  label="Ends"
-                  type="date"
-                  required
-                />
-              </div>
               <DialogField
-                id={`school-term-sort-${year.id}`}
-                name="sort_order"
-                label="Sort order"
-                type="number"
+                id={`school-term-ends-${year.id}`}
+                name="ends_on"
+                label="Ends"
+                type="date"
                 required
-                defaultValue={String(terms.length + 1)}
               />
-            </FormDialog>
-          </div>
+            </div>
+            <DialogField
+              id={`school-term-sort-${year.id}`}
+              name="sort_order"
+              label="Sort order"
+              type="number"
+              required
+              defaultValue={String(terms.length + 1)}
+            />
+          </FormDialog>
         ) : null}
       </div>
-    </li>
+    </article>
   );
 }
 
-function StructurePanel({
+function OverviewSection({
   schoolId,
+  years,
+  terms,
   grades,
   sections,
   subjects,
+  enrolments,
+  supportsSchoolStructure,
+}: {
+  schoolId: string;
+  years: SchoolAcademicYearRow[];
+  terms: SchoolAcademicTermRow[];
+  grades: SchoolGradeRow[];
+  sections: SchoolSectionRow[];
+  subjects: SchoolSubjectRow[];
+  enrolments: SchoolEnrolmentRow[];
+  supportsSchoolStructure: boolean;
+}) {
+  const currentYear = years.find((y) => y.isCurrent) ?? years[0] ?? null;
+  const activeGrades = grades.filter((g) => g.status === "active").length;
+  const activeSections = sections.filter((s) => s.status === "active").length;
+  const enrolled = enrolments.filter((e) => e.status === "enrolled").length;
+  const q = `school=${encodeURIComponent(schoolId)}`;
+
+  const cards = [
+    {
+      label: "Current year",
+      value: currentYear?.name ?? "—",
+      hint: currentYear
+        ? `${currentYear.startsOn} → ${currentYear.endsOn}`
+        : "Add an academic year",
+      href: `/school/academic?${q}&section=years`,
+    },
+    {
+      label: "Grades",
+      value: supportsSchoolStructure ? activeGrades : "—",
+      hint: `${grades.length} total`,
+      href: `/school/academic?${q}&section=grades`,
+    },
+    {
+      label: "Sections",
+      value: supportsSchoolStructure ? activeSections : "—",
+      hint: `${enrolled} enrolled students`,
+      href: `/school/academic?${q}&section=grades`,
+    },
+    {
+      label: "Subjects",
+      value: supportsSchoolStructure
+        ? subjects.filter((s) => s.status === "active").length
+        : "—",
+      hint: `${terms.length} terms across years`,
+      href: `/school/academic?${q}&section=subjects`,
+    },
+  ];
+
+  return (
+    <section aria-labelledby="academic-overview-heading">
+      <h2
+        id="academic-overview-heading"
+        className="text-sm font-semibold tracking-wide text-ink uppercase"
+      >
+        Overview
+      </h2>
+      <p className="mt-1 text-sm text-muted">
+        Structure at a glance — jump into grades, years, or subjects to edit.
+      </p>
+
+      <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {cards.map((card) => (
+          <Link
+            key={card.label}
+            href={card.href}
+            className="rounded-2xl border border-line bg-paper-elevated p-4 no-underline transition hover:border-teal/40"
+          >
+            <p className="text-xs font-medium tracking-wide text-muted uppercase">
+              {card.label}
+            </p>
+            <p className="mt-3 text-2xl font-semibold tracking-tight text-ink">
+              {card.value}
+            </p>
+            <p className="mt-2 text-xs text-muted">{card.hint}</p>
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function GradesSection({
+  schoolId,
+  grades,
+  sections,
+  enrolments,
   canManage,
 }: {
   schoolId: string;
   grades: SchoolGradeRow[];
   sections: SchoolSectionRow[];
-  subjects: SchoolSubjectRow[];
+  enrolments: SchoolEnrolmentRow[];
   canManage: boolean;
 }) {
   const [gradeState, gradeAction, gradePending] = useActionState(
@@ -331,141 +449,234 @@ function StructurePanel({
     createSchoolSectionAction,
     initialState,
   );
-  const [subjectState, subjectAction, subjectPending] = useActionState(
-    createSchoolSubjectAction,
-    initialState,
-  );
   const [archiveState, archiveAction, archivePending] = useActionState(
     archiveSchoolGradeAction,
     initialState,
   );
   const gradeDialog = useActionDialog(gradeState);
   const sectionDialog = useActionDialog(sectionState);
-  const subjectDialog = useActionDialog(subjectState);
   const archiveDialog = useActionDialog(archiveState);
   const [archiveTarget, setArchiveTarget] = useState<SchoolGradeRow | null>(
     null,
   );
 
-  const sectionsByGrade = new Map<string, SchoolSectionRow[]>();
-  for (const section of sections) {
-    const list = sectionsByGrade.get(section.gradeId) ?? [];
-    list.push(section);
-    sectionsByGrade.set(section.gradeId, list);
+  const sortedGrades = useMemo(
+    () => [...grades].sort((a, b) => a.sortOrder - b.sortOrder),
+    [grades],
+  );
+
+  const [openIds, setOpenIds] = useState<Set<string>>(() => {
+    const firstActive = sortedGrades.find((g) => g.status === "active");
+    return new Set(firstActive ? [firstActive.id] : []);
+  });
+
+  const sectionsByGrade = useMemo(() => {
+    const map = new Map<string, SchoolSectionRow[]>();
+    for (const section of sections) {
+      const list = map.get(section.gradeId) ?? [];
+      list.push(section);
+      map.set(section.gradeId, list);
+    }
+    return map;
+  }, [sections]);
+
+  const enrolledByGrade = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const enrolment of enrolments) {
+      if (enrolment.status !== "enrolled") continue;
+      map.set(enrolment.gradeId, (map.get(enrolment.gradeId) ?? 0) + 1);
+    }
+    return map;
+  }, [enrolments]);
+
+  const enrolledBySection = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const enrolment of enrolments) {
+      if (enrolment.status !== "enrolled" || !enrolment.sectionId) continue;
+      map.set(
+        enrolment.sectionId,
+        (map.get(enrolment.sectionId) ?? 0) + 1,
+      );
+    }
+    return map;
+  }, [enrolments]);
+
+  function toggleGrade(id: string) {
+    setOpenIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   }
 
   return (
-    <section aria-labelledby="school-structure-heading" className="mt-12">
-      <h2
-        id="school-structure-heading"
-        className="font-display text-2xl tracking-tight text-ink"
-      >
-        Grades and subjects
-      </h2>
-      <p className="mt-2 max-w-2xl text-sm text-muted">
-        Grades, sections, and subjects for school workflows.
-      </p>
-
-      <div className="mt-8">
-        <h3 className="text-sm font-semibold tracking-wide text-ink uppercase">
-          Grades and sections
-        </h3>
-        {grades.length === 0 ? (
-          <p className="mt-2 text-sm text-muted">No grades yet.</p>
-        ) : (
-          <ul className="mt-4 space-y-4">
-            {grades.map((grade) => (
-              <li key={grade.id} className="border-t border-line/60 pt-4">
-                <div className="flex flex-wrap items-center gap-3">
-                  <p className="font-medium text-ink">
-                    {grade.name}
-                    {grade.code ? (
-                      <span className="ml-2 text-sm text-muted">
-                        ({grade.code})
-                      </span>
-                    ) : null}
-                    {grade.status === "archived" ? (
-                      <span className="ml-2 text-xs text-muted uppercase">
-                        Archived
-                      </span>
-                    ) : null}
-                  </p>
-                  {canManage && grade.status === "active" ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setArchiveTarget(grade);
-                        archiveDialog.openDialog();
-                      }}
-                      className="text-xs text-muted underline-offset-2 hover:underline"
-                    >
-                      Archive
-                    </button>
-                  ) : null}
-                </div>
-                <ul className="mt-2 space-y-1 text-sm text-muted">
-                  {(sectionsByGrade.get(grade.id) ?? []).map((section) => (
-                    <li key={section.id}>
-                      Section {section.name}
-                      {section.capacity != null
-                        ? ` · capacity ${section.capacity}`
-                        : ""}
-                    </li>
-                  ))}
-                  {(sectionsByGrade.get(grade.id) ?? []).length === 0 ? (
-                    <li>No sections yet.</li>
-                  ) : null}
-                </ul>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-
-      {canManage ? (
-        <div className="mt-6 flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={gradeDialog.openDialog}
-            className="rounded-md bg-teal px-4 py-2 text-sm font-medium text-white"
+    <section aria-labelledby="school-structure-heading">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2
+            id="school-structure-heading"
+            className="text-sm font-semibold tracking-wide text-ink uppercase"
           >
-            + Add grade
-          </button>
-          <button
-            type="button"
-            onClick={sectionDialog.openDialog}
-            className="rounded-md border border-line bg-paper-elevated px-4 py-2 text-sm font-medium text-ink"
-          >
-            + Add section
-          </button>
-          <button
-            type="button"
-            onClick={subjectDialog.openDialog}
-            className="rounded-md border border-line bg-paper-elevated px-4 py-2 text-sm font-medium text-ink"
-          >
-            + Add subject
-          </button>
+            Grades and sections
+          </h2>
+          <p className="mt-1 text-sm text-muted">
+            Expand a grade to review capacity and current enrolment.
+          </p>
         </div>
-      ) : null}
-
-      <div className="mt-10">
-        <h3 className="text-sm font-semibold tracking-wide text-ink uppercase">
-          Subjects
-        </h3>
-        {subjects.length === 0 ? (
-          <p className="mt-2 text-sm text-muted">No subjects yet.</p>
-        ) : (
-          <ul className="mt-2 space-y-1 text-sm text-ink">
-            {subjects.map((subject) => (
-              <li key={subject.id}>
-                {subject.name}
-                {subject.code ? ` (${subject.code})` : ""}
-                {subject.status === "archived" ? " · archived" : ""}
-              </li>
-            ))}
-          </ul>
-        )}
+        {canManage ? (
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={gradeDialog.openDialog}
+              className="rounded-md bg-teal px-4 py-2 text-sm font-medium text-white"
+            >
+              + Add grade
+            </button>
+            <button
+              type="button"
+              onClick={sectionDialog.openDialog}
+              className="rounded-md border border-line bg-paper-elevated px-4 py-2 text-sm font-medium text-ink"
+            >
+              + Add section
+            </button>
+          </div>
+        ) : null}
       </div>
+
+      {sortedGrades.length === 0 ? (
+        <p className="mt-6 text-sm text-muted">
+          No grades yet. Add Grade 1–10 (or your scheme) to start enrolments.
+        </p>
+      ) : (
+        <ul className="mt-5 space-y-3">
+          {sortedGrades.map((grade) => {
+            const gradeSections = sectionsByGrade.get(grade.id) ?? [];
+            const enrolled = enrolledByGrade.get(grade.id) ?? 0;
+            const capacityTotal = gradeSections.reduce(
+              (sum, s) => sum + (s.capacity ?? 0),
+              0,
+            );
+            const open = openIds.has(grade.id);
+
+            return (
+              <li
+                key={grade.id}
+                className="overflow-hidden rounded-2xl border border-line bg-paper-elevated"
+              >
+                <button
+                  type="button"
+                  onClick={() => toggleGrade(grade.id)}
+                  aria-expanded={open}
+                  className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left"
+                >
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-semibold text-ink">
+                        {grade.name}
+                      </span>
+                      {grade.code ? (
+                        <span className="text-sm text-muted">({grade.code})</span>
+                      ) : null}
+                      <StatusBadge status={grade.status} />
+                    </div>
+                    <p className="mt-1 text-xs text-muted">
+                      {gradeSections.length} section
+                      {gradeSections.length === 1 ? "" : "s"}
+                      <span className="mx-1.5 text-line">·</span>
+                      {enrolled} enrolled
+                      {capacityTotal > 0 ? (
+                        <>
+                          <span className="mx-1.5 text-line">·</span>
+                          capacity {capacityTotal}
+                        </>
+                      ) : null}
+                    </p>
+                  </div>
+                  <span className="shrink-0 text-muted" aria-hidden>
+                    {open ? "▾" : "▸"}
+                  </span>
+                </button>
+
+                {open ? (
+                  <div className="border-t border-line/70 px-4 py-4">
+                    {gradeSections.length === 0 ? (
+                      <p className="text-sm text-muted">
+                        No sections yet
+                        {canManage ? " — add Section A / B." : "."}
+                      </p>
+                    ) : (
+                      <ul className="space-y-2">
+                        {gradeSections.map((section) => {
+                          const sectionEnrolled =
+                            enrolledBySection.get(section.id) ?? 0;
+                          const fill =
+                            section.capacity != null && section.capacity > 0
+                              ? Math.min(
+                                  100,
+                                  Math.round(
+                                    (sectionEnrolled / section.capacity) * 100,
+                                  ),
+                                )
+                              : null;
+
+                          return (
+                            <li
+                              key={section.id}
+                              className="rounded-xl border border-line bg-paper px-3 py-3"
+                            >
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                <p className="text-sm font-medium text-ink">
+                                  Section {section.name}
+                                </p>
+                                <p className="text-xs text-muted">
+                                  {sectionEnrolled}
+                                  {section.capacity != null
+                                    ? ` / ${section.capacity}`
+                                    : ""}{" "}
+                                  enrolled
+                                </p>
+                              </div>
+                              {fill != null ? (
+                                <div
+                                  className="mt-2 h-1.5 overflow-hidden rounded-full bg-line/60"
+                                  role="meter"
+                                  aria-valuenow={fill}
+                                  aria-valuemin={0}
+                                  aria-valuemax={100}
+                                  aria-label={`${section.name} capacity`}
+                                >
+                                  <div
+                                    className="h-full rounded-full bg-teal"
+                                    style={{ width: `${fill}%` }}
+                                  />
+                                </div>
+                              ) : null}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+
+                    {canManage && grade.status === "active" ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setArchiveTarget(grade);
+                          archiveDialog.openDialog();
+                        }}
+                        className="mt-4 text-xs text-muted underline-offset-2 hover:underline"
+                      >
+                        Archive grade
+                      </button>
+                    ) : null}
+                  </div>
+                ) : null}
+              </li>
+            );
+          })}
+        </ul>
+      )}
 
       <FormDialog
         open={gradeDialog.open}
@@ -531,32 +742,6 @@ function StructurePanel({
       </FormDialog>
 
       <FormDialog
-        open={subjectDialog.open}
-        onClose={subjectDialog.closeDialog}
-        title="Add subject"
-        description="Create a subject for this school’s curriculum."
-        submitLabel="Create subject"
-        formAction={subjectAction}
-        busy={subjectPending}
-        dirty={subjectDialog.dirty}
-        onDirtyChange={subjectDialog.setDirty}
-        error={subjectState.error}
-      >
-        <input type="hidden" name="school_id" value={schoolId} />
-        <DialogField
-          id="school-subject-name"
-          name="name"
-          label="Subject name"
-          required
-        />
-        <DialogField
-          id="school-subject-code"
-          name="code"
-          label="Code (optional)"
-        />
-      </FormDialog>
-
-      <FormDialog
         open={archiveDialog.open && archiveTarget !== null}
         onClose={() => {
           archiveDialog.closeDialog();
@@ -581,16 +766,17 @@ function StructurePanel({
   );
 }
 
-export function SchoolAcademicPanel({
+function YearsSection({
   schoolId,
   years,
   terms,
-  grades,
-  sections,
-  subjects,
   canManage,
-  supportsSchoolStructure,
-}: AcademicPanelProps) {
+}: {
+  schoolId: string;
+  years: SchoolAcademicYearRow[];
+  terms: SchoolAcademicTermRow[];
+  canManage: boolean;
+}) {
   const termsByYear = new Map<string, SchoolAcademicTermRow[]>();
   for (const term of terms) {
     const list = termsByYear.get(term.academicYearId) ?? [];
@@ -599,50 +785,284 @@ export function SchoolAcademicPanel({
   }
 
   return (
-    <div>
-      <section aria-labelledby="school-academic-years-heading">
-        <h2
-          id="school-academic-years-heading"
-          className="font-display text-2xl tracking-tight text-ink"
-        >
-          Academic years
-        </h2>
-        <p className="mt-2 max-w-2xl text-sm text-muted">
-          Define sessions and optional terms for this school.
-        </p>
+    <section aria-labelledby="school-academic-years-heading">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2
+            id="school-academic-years-heading"
+            className="text-sm font-semibold tracking-wide text-ink uppercase"
+          >
+            Academic years
+          </h2>
+          <p className="mt-1 text-sm text-muted">
+            Mark the current year clearly, then add terms for the calendar.
+          </p>
+        </div>
+        {canManage ? <CreateYearForm schoolId={schoolId} /> : null}
+      </div>
 
-        {years.length === 0 ? (
-          <p className="mt-6 text-sm text-muted">No academic years yet.</p>
-        ) : (
-          <ul className="mt-2">
-            {years.map((year) => (
+      {years.length === 0 ? (
+        <p className="mt-6 text-sm text-muted">No academic years yet.</p>
+      ) : (
+        <ul className="mt-5 space-y-4">
+          {years.map((year) => (
+            <li key={year.id}>
               <YearCard
-                key={year.id}
                 year={year}
                 terms={termsByYear.get(year.id) ?? []}
                 schoolId={schoolId}
                 canManage={canManage}
               />
-            ))}
-          </ul>
-        )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
 
-        {canManage ? <CreateYearForm schoolId={schoolId} /> : null}
-      </section>
+function SubjectsSection({
+  schoolId,
+  grades,
+  subjects,
+  canManage,
+}: {
+  schoolId: string;
+  grades: SchoolGradeRow[];
+  subjects: SchoolSubjectRow[];
+  canManage: boolean;
+}) {
+  const [subjectState, subjectAction, subjectPending] = useActionState(
+    createSchoolSubjectAction,
+    initialState,
+  );
+  const subjectDialog = useActionDialog(subjectState);
+  const activeGrades = grades.filter((g) => g.status === "active");
 
-      {supportsSchoolStructure ? (
-        <StructurePanel
+  return (
+    <section aria-labelledby="school-subjects-heading">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2
+            id="school-subjects-heading"
+            className="text-sm font-semibold tracking-wide text-ink uppercase"
+          >
+            Subjects
+          </h2>
+          <p className="mt-1 text-sm text-muted">
+            School-wide subject catalog. Assign subjects to grades when building
+            timetables and report cards.
+          </p>
+        </div>
+        {canManage ? (
+          <button
+            type="button"
+            onClick={subjectDialog.openDialog}
+            className="rounded-md bg-teal px-4 py-2 text-sm font-medium text-white"
+          >
+            + Add subject
+          </button>
+        ) : null}
+      </div>
+
+      {subjects.length === 0 ? (
+        <p className="mt-6 text-sm text-muted">
+          No subjects yet. Add Maths, English, Urdu, and other offerings.
+        </p>
+      ) : (
+        <ul className="mt-5 divide-y divide-line/70 rounded-2xl border border-line bg-paper-elevated">
+          {subjects.map((subject) => (
+            <li
+              key={subject.id}
+              className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
+            >
+              <div>
+                <p className="text-sm font-medium text-ink">
+                  {subject.name}
+                  {subject.code ? (
+                    <span className="ml-2 text-muted">({subject.code})</span>
+                  ) : null}
+                </p>
+                <p className="mt-0.5 text-xs text-muted">
+                  Available to {activeGrades.length} active grade
+                  {activeGrades.length === 1 ? "" : "s"}
+                </p>
+              </div>
+              <StatusBadge status={subject.status} />
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <div className="mt-6 rounded-2xl border border-dashed border-line bg-paper px-4 py-4">
+        <p className="text-sm font-medium text-ink">Grade & section assignment</p>
+        <p className="mt-1 text-sm text-muted">
+          Subjects are catalogued school-wide today. Per-grade and per-section
+          subject maps (for timetables) will attach here without changing this
+          catalog.
+        </p>
+        {activeGrades.length > 0 ? (
+          <p className="mt-3 text-xs text-muted">
+            Ready grades:{" "}
+            {activeGrades.map((g) => g.name).join(", ")}
+          </p>
+        ) : null}
+      </div>
+
+      <FormDialog
+        open={subjectDialog.open}
+        onClose={subjectDialog.closeDialog}
+        title="Add subject"
+        description="Create a subject for this school’s curriculum."
+        submitLabel="Create subject"
+        formAction={subjectAction}
+        busy={subjectPending}
+        dirty={subjectDialog.dirty}
+        onDirtyChange={subjectDialog.setDirty}
+        error={subjectState.error}
+      >
+        <input type="hidden" name="school_id" value={schoolId} />
+        <DialogField
+          id="school-subject-name"
+          name="name"
+          label="Subject name"
+          required
+        />
+        <DialogField
+          id="school-subject-code"
+          name="code"
+          label="Code (optional)"
+        />
+      </FormDialog>
+    </section>
+  );
+}
+
+function LinksSection({ schoolId }: { schoolId: string }) {
+  const q = `school=${encodeURIComponent(schoolId)}`;
+  const links = [
+    {
+      href: `/school/students?${q}&section=enrolments`,
+      title: "Student enrolments",
+      body: "Place students into grades and sections for the current year.",
+    },
+    {
+      href: `/school/attendance?${q}`,
+      title: "Attendance registers",
+      body: "Open daily attendance by section once classes are set up.",
+    },
+    {
+      href: `/school/students?${q}&section=directory`,
+      title: "Student directory",
+      body: "Review who is on roll before building timetables.",
+    },
+  ];
+
+  return (
+    <section aria-labelledby="academic-links-heading">
+      <h2
+        id="academic-links-heading"
+        className="text-sm font-semibold tracking-wide text-ink uppercase"
+      >
+        Connected workflows
+      </h2>
+      <p className="mt-1 text-sm text-muted">
+        Academic structure feeds enrolments and attendance. Timetables will
+        plug in here next.
+      </p>
+
+      <ul className="mt-5 grid gap-3 sm:grid-cols-2">
+        {links.map((link) => (
+          <li key={link.href}>
+            <Link
+              href={link.href}
+              className="block h-full rounded-2xl border border-line bg-paper-elevated p-4 no-underline transition hover:border-teal/40"
+            >
+              <p className="text-sm font-semibold text-ink">{link.title}</p>
+              <p className="mt-1 text-sm text-muted">{link.body}</p>
+            </Link>
+          </li>
+        ))}
+        <li className="rounded-2xl border border-dashed border-line bg-paper p-4">
+          <p className="text-sm font-semibold text-ink">Timetables</p>
+          <p className="mt-1 text-sm text-muted">
+            Period schedules by section are not enabled yet. Subjects and
+            sections above are the foundation.
+          </p>
+        </li>
+      </ul>
+    </section>
+  );
+}
+
+export function SchoolAcademicPanel({
+  schoolId,
+  years,
+  terms,
+  grades,
+  sections,
+  subjects,
+  enrolments,
+  canManage,
+  supportsSchoolStructure,
+  activeSection,
+}: AcademicPanelProps) {
+  return (
+    <div>
+      {activeSection === "overview" ? (
+        <OverviewSection
           schoolId={schoolId}
+          years={years}
+          terms={terms}
           grades={grades}
           sections={sections}
           subjects={subjects}
+          enrolments={enrolments}
+          supportsSchoolStructure={supportsSchoolStructure}
+        />
+      ) : null}
+
+      {activeSection === "grades" ? (
+        supportsSchoolStructure ? (
+          <GradesSection
+            schoolId={schoolId}
+            grades={grades}
+            sections={sections}
+            enrolments={enrolments}
+            canManage={canManage}
+          />
+        ) : (
+          <p className="text-sm text-muted">
+            Grades and sections are available for school or mixed institutions.
+          </p>
+        )
+      ) : null}
+
+      {activeSection === "years" ? (
+        <YearsSection
+          schoolId={schoolId}
+          years={years}
+          terms={terms}
           canManage={canManage}
         />
-      ) : (
-        <p className="mt-12 text-sm text-muted">
-          Grades and subjects are available for school or mixed institutions.
-        </p>
-      )}
+      ) : null}
+
+      {activeSection === "subjects" ? (
+        supportsSchoolStructure ? (
+          <SubjectsSection
+            schoolId={schoolId}
+            grades={grades}
+            subjects={subjects}
+            canManage={canManage}
+          />
+        ) : (
+          <p className="text-sm text-muted">
+            Subjects are available for school or mixed institutions.
+          </p>
+        )
+      ) : null}
+
+      {activeSection === "links" ? <LinksSection schoolId={schoolId} /> : null}
 
       {!canManage ? (
         <p className="mt-8 text-sm text-muted">
