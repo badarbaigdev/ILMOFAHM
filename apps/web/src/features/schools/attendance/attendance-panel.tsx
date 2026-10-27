@@ -38,6 +38,7 @@ import type {
 } from "@/features/schools/academic/queries";
 import type { SchoolStudentRow } from "@/features/schools/students/queries";
 import { StatusBadge } from "@/features/schools/ui/data-table";
+import { SchoolLogo } from "@/features/schools/ui/school-logo";
 
 const initial: SchoolAttendanceActionState = { error: null, success: null };
 
@@ -233,14 +234,11 @@ export function SchoolAttendancePanel({
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <div className="flex items-center gap-2.5">
-            {schoolLogoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={schoolLogoUrl}
-                alt=""
-                className="h-9 w-9 rounded-md border border-line bg-paper-elevated object-contain"
-              />
-            ) : null}
+            <SchoolLogo
+              schoolName={schoolName}
+              logoUrl={schoolLogoUrl}
+              size="sm"
+            />
             <p className="text-[0.65rem] font-semibold tracking-[0.2em] text-teal uppercase">
               {schoolName}
             </p>

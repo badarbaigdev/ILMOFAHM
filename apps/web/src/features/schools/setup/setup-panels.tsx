@@ -25,6 +25,7 @@ import {
   updateSchoolLocaleAction,
   updateSchoolProfileAction,
 } from "@/features/schools/setup/actions";
+import { SchoolLogo } from "@/features/schools/ui/school-logo";
 
 const initial: SchoolSetupActionState = { error: null, success: null };
 
@@ -146,17 +147,18 @@ export function SchoolBrandingPanel({
         Optional public website and brand accents. Upload a logo or paste an
         https URL override.
       </p>
-      {school.brandLogoUrl ? (
-        <div className="mt-4 flex items-center gap-3">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={school.brandLogoUrl}
-            alt=""
-            className="h-12 w-12 rounded-md border border-line object-contain bg-paper"
-          />
-          <p className="text-sm text-muted">Current logo</p>
-        </div>
-      ) : null}
+      <div className="mt-4 flex items-center gap-3">
+        <SchoolLogo
+          schoolName={school.brandDisplayName || school.name}
+          logoUrl={school.brandLogoUrl}
+          size="lg"
+        />
+        <p className="text-sm text-muted">
+          {school.brandLogoUrl
+            ? "Current school logo"
+            : "Default logo placeholder (upload to replace)"}
+        </p>
+      </div>
       {canManage ? (
         <form action={action} className="mt-6 max-w-lg space-y-4" noValidate>
           <input type="hidden" name="school_id" value={school.id} />

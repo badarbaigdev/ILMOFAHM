@@ -6,6 +6,7 @@ import {
   canSchool,
   isSchoolAuthorizationError,
 } from "@/features/schools/authorization";
+import { schoolBrandLogoUrl, schoolBrandName } from "@/features/schools/branding";
 import { loadSchoolContext } from "@/features/schools/context";
 import { SchoolFeesPanel } from "@/features/schools/fees/fees-panel";
 import {
@@ -131,6 +132,11 @@ export default async function SchoolFeesPage({ searchParams }: PageProps) {
     "fee.manage",
   );
   const summary = summarizeFeeCharges(charges);
+  const brandName = schoolBrandName(active.school);
+  const logoUrl = schoolBrandLogoUrl(active.school);
+  const contact = [active.school.phone, active.school.email]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
     <main
@@ -143,19 +149,22 @@ export default async function SchoolFeesPage({ searchParams }: PageProps) {
           href={`/school?school=${active.school.id}`}
           className="text-ink underline-offset-2 hover:underline"
         >
-          ← {active.school.name}
+          ← {brandName}
         </Link>
       </p>
       <h1 className="mt-4 text-2xl font-semibold tracking-tight text-ink">
         Fees collection
       </h1>
       <p className="mt-1 text-sm text-muted">
-        Fee heads, student charges, and manual receipts for {active.school.name}.
-        Platform SaaS billing stays separate.
+        Fee bills and payment receipts for {brandName}. Platform SaaS billing
+        stays separate.
       </p>
 
       <SchoolFeesPanel
         schoolId={active.school.id}
+        schoolName={brandName}
+        schoolLogoUrl={logoUrl}
+        schoolContact={contact || null}
         heads={heads}
         charges={charges}
         payments={payments}

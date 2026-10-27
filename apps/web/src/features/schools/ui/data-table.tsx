@@ -44,7 +44,21 @@ export function StatusBadge({ status }: { status: string }) {
   );
 }
 
-export function PersonAvatar({ name }: { name: string }) {
+export function PersonAvatar({
+  name,
+  photoUrl,
+  size = "md",
+  className = "",
+}: {
+  name: string;
+  photoUrl?: string | null;
+  size?: "sm" | "md" | "lg";
+  className?: string;
+}) {
+  const dim =
+    size === "sm" ? "h-7 w-7" : size === "lg" ? "h-16 w-16" : "h-8 w-8";
+  const text =
+    size === "sm" ? "text-[0.6rem]" : size === "lg" ? "text-lg" : "text-xs";
   const initials =
     name
       .split(/\s+/)
@@ -54,12 +68,35 @@ export function PersonAvatar({ name }: { name: string }) {
       .slice(0, 2)
       .toUpperCase() || "?";
 
+  if (photoUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={photoUrl}
+        alt=""
+        className={`${dim} shrink-0 rounded-full object-cover ${className}`}
+      />
+    );
+  }
+
   return (
     <span
       aria-hidden
-      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#dce8e6] text-xs font-semibold text-teal"
+      title="Profile photo placeholder"
+      className={`relative ${dim} inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#dce8e6] ${text} font-semibold text-teal ${className}`}
     >
-      {initials}
+      <svg
+        viewBox="0 0 40 40"
+        className="absolute inset-0 h-full w-full text-teal/25"
+        aria-hidden
+      >
+        <circle cx="20" cy="15" r="7" fill="currentColor" />
+        <path
+          d="M6 36c2-10 26-10 28 0"
+          fill="currentColor"
+        />
+      </svg>
+      <span className="relative">{initials}</span>
     </span>
   );
 }
@@ -77,16 +114,7 @@ export function PersonCell({
 }) {
   const body = (
     <div className="flex items-center gap-2.5">
-      {photoUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={photoUrl}
-          alt=""
-          className="h-8 w-8 shrink-0 rounded-full object-cover"
-        />
-      ) : (
-        <PersonAvatar name={name} />
-      )}
+      <PersonAvatar name={name} photoUrl={photoUrl} />
       <div className="min-w-0">
         <p
           className={`truncate font-medium ${href ? "text-teal" : "text-ink"}`}

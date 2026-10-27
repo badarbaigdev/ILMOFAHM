@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 
 import { ToastHost } from "@/components/ui/toast";
+import { SchoolLogo } from "@/features/schools/ui/school-logo";
 import { brand } from "@/lib/brand";
 
 export type ConsoleNavItem = {
@@ -83,12 +84,11 @@ export function ConsoleShell({
             href={homeHref}
             className="mt-2 flex items-center gap-2.5 no-underline"
           >
-            {variant === "school" && brandLogoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={brandLogoUrl}
-                alt=""
-                className="h-9 w-9 shrink-0 rounded-md bg-white/10 object-contain"
+            {variant === "school" ? (
+              <SchoolLogo
+                schoolName={schoolBrand ?? "School"}
+                logoUrl={brandLogoUrl}
+                size="sm"
               />
             ) : null}
             <span className="min-w-0 text-lg font-semibold tracking-tight text-white">

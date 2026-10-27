@@ -1,5 +1,8 @@
 "use client";
 
+import { PersonAvatar } from "@/features/schools/ui/data-table";
+import { SchoolLogo } from "@/features/schools/ui/school-logo";
+
 export type SchoolIdCardProps = {
   schoolName: string;
   schoolLogoUrl?: string | null;
@@ -12,18 +15,6 @@ export type SchoolIdCardProps = {
   detailLabel: string;
   detailValue: string;
 };
-
-function initials(name: string): string {
-  return (
-    name
-      .split(/\s+/)
-      .filter(Boolean)
-      .map((part) => part[0])
-      .join("")
-      .slice(0, 2)
-      .toUpperCase() || "?"
-  );
-}
 
 /**
  * Credit-card sized printable ID. Screen chrome (print button) is hidden in print.
@@ -92,21 +83,11 @@ export function SchoolIdCard({
       >
         <div className="flex h-full flex-col">
           <header className="flex items-center gap-2.5 border-b border-line bg-[#f4f7f8] px-3 py-2">
-            {schoolLogoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={schoolLogoUrl}
-                alt=""
-                className="h-8 w-8 shrink-0 rounded object-contain"
-              />
-            ) : (
-              <span
-                aria-hidden
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-teal text-[0.65rem] font-bold text-white"
-              >
-                {initials(schoolName)}
-              </span>
-            )}
+            <SchoolLogo
+              schoolName={schoolName}
+              logoUrl={schoolLogoUrl}
+              size="sm"
+            />
             <div className="min-w-0">
               <p className="truncate text-[0.7rem] font-semibold tracking-wide text-ink uppercase">
                 {schoolName}
@@ -117,21 +98,12 @@ export function SchoolIdCard({
 
           <div className="flex flex-1 items-stretch gap-3 px-3 py-2.5">
             <div className="flex shrink-0 items-center">
-              {personPhotoUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={personPhotoUrl}
-                  alt=""
-                  className="h-[22mm] w-[18mm] rounded-md border border-line object-cover"
-                />
-              ) : (
-                <span
-                  aria-hidden
-                  className="flex h-[22mm] w-[18mm] items-center justify-center rounded-md border border-line bg-[#dce8e6] text-lg font-semibold text-teal"
-                >
-                  {initials(personName)}
-                </span>
-              )}
+              <PersonAvatar
+                name={personName}
+                photoUrl={personPhotoUrl}
+                size="lg"
+                className="!h-[22mm] !w-[18mm] !rounded-md border border-line"
+              />
             </div>
 
             <div className="min-w-0 flex-1 space-y-1.5 self-center">

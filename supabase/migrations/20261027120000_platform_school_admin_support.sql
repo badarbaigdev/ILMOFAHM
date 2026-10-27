@@ -25,7 +25,8 @@ grant execute on function public.can_manage_school_staff(uuid) to authenticated;
 -- school_support_sessions (time-limited, audited “enter school” access)
 -- ---------------------------------------------------------------------------
 
-create table public.school_support_sessions (
+-- Idempotent: remote may already have this table from a prior partial apply.
+create table if not exists public.school_support_sessions (
   id uuid primary key default gen_random_uuid(),
   school_id uuid not null
     references public.schools (id)
@@ -53,16 +54,20 @@ create table public.school_support_sessions (
 comment on table public.school_support_sessions is
   'Time-limited platform operator access to a school console for support/review. Not unrestricted by default (ILM-PLT-011).';
 
-create index school_support_sessions_school_id_idx
+create index if not exists school_support_sessions_school_id_idx
   on public.school_support_sessions (school_id);
-create index school_support_sessions_operator_idx
+create index if not exists school_support_sessions_operator_idx
   on public.school_support_sessions (operator_user_id, ended_at, expires_at);
 
+drop trigger if exists school_support_sessions_set_updated_at
+  on public.school_support_sessions;
 create trigger school_support_sessions_set_updated_at
 before update on public.school_support_sessions
 for each row
 execute function public.set_updated_at();
 
+drop trigger if exists school_support_sessions_reject_school_id_change
+  on public.school_support_sessions;
 create trigger school_support_sessions_reject_school_id_change
 before update on public.school_support_sessions
 for each row
@@ -73,6 +78,8 @@ alter table public.school_support_sessions force row level security;
 revoke all on table public.school_support_sessions from anon, authenticated;
 grant select on table public.school_support_sessions to authenticated;
 
+drop policy if exists school_support_sessions_select_operator
+  on public.school_support_sessions;
 create policy school_support_sessions_select_operator
 on public.school_support_sessions
 for select

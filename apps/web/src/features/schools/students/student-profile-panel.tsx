@@ -53,27 +53,12 @@ export function SchoolStudentProfilePanel({
     <div className="space-y-8">
       <section className="rounded-2xl border border-line bg-paper-elevated p-5 sm:p-6">
         <div className="flex flex-wrap items-start gap-4">
-          {student.photoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={student.photoUrl}
-              alt=""
-              className="h-20 w-20 rounded-2xl object-cover"
-            />
-          ) : (
-            <span
-              aria-hidden
-              className="flex h-20 w-20 items-center justify-center rounded-2xl bg-[#dce8e6] text-xl font-semibold text-teal"
-            >
-              {fullName
-                .split(/\s+/)
-                .filter(Boolean)
-                .map((p) => p[0])
-                .join("")
-                .slice(0, 2)
-                .toUpperCase() || "?"}
-            </span>
-          )}
+          <PersonAvatar
+            name={fullName}
+            photoUrl={student.photoUrl}
+            size="lg"
+            className="!h-20 !w-20 !rounded-2xl"
+          />
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-2xl font-semibold tracking-tight text-ink">
@@ -142,16 +127,7 @@ export function SchoolStudentProfilePanel({
                   href={`/school/guardians/${g.guardianId}?${schoolQuery}`}
                   className="flex min-w-0 items-center gap-2.5 no-underline hover:opacity-90"
                 >
-                  {g.photoUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={g.photoUrl}
-                      alt=""
-                      className="h-8 w-8 rounded-full object-cover"
-                    />
-                  ) : (
-                    <PersonAvatar name={g.name} />
-                  )}
+                  <PersonAvatar name={g.name} photoUrl={g.photoUrl} />
                   <span className="min-w-0">
                     <span className="block truncate font-medium text-teal">
                       {g.name}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useMemo, useState } from "react";
 
 import {
   DialogField,
@@ -14,6 +14,8 @@ import {
   createSchoolFeeHeadAction,
   recordSchoolFeePaymentAction,
 } from "@/features/schools/fees/actions";
+import { FeeVoucherDialog } from "@/features/schools/fees/fee-voucher-dialog";
+import { PaymentReceiptDialog } from "@/features/schools/fees/payment-receipt-dialog";
 import type {
   FeeCollectionSummary,
   SchoolFeeChargeRow,
@@ -32,6 +34,9 @@ const initial: SchoolFeeActionState = { error: null, success: null };
 
 type Props = {
   schoolId: string;
+  schoolName: string;
+  schoolLogoUrl?: string | null;
+  schoolContact?: string | null;
   heads: SchoolFeeHeadRow[];
   charges: SchoolFeeChargeRow[];
   payments: SchoolFeePaymentRow[];
@@ -51,6 +56,9 @@ function formatPkr(amount: string): string {
 
 export function SchoolFeesPanel({
   schoolId,
+  schoolName,
+  schoolLogoUrl = null,
+  schoolContact = null,
   heads,
   charges,
   payments,
@@ -75,6 +83,24 @@ export function SchoolFeesPanel({
   const chargeDialog = useActionDialog(chargeState);
   const payDialog = useActionDialog(payState);
 
+  const [voucherCharge, setVoucherCharge] =
+    useState<SchoolFeeChargeRow | null>(null);
+  const [receiptPayment, setReceiptPayment] =
+    useState<SchoolFeePaymentRow | null>(null);
+
+  const studentsById = useMemo(
+    () => new Map(students.map((s) => [s.id, s])),
+    [students],
+  );
+  const headsById = useMemo(
+    () => new Map(heads.map((h) => [h.id, h])),
+    [heads],
+  );
+  const chargesById = useMemo(
+    () => new Map(charges.map((c) => [c.id, c])),
+    [charges],
+  );
+
   const studentLabel = new Map(
     students.map((s) => [
       s.id,
@@ -87,6 +113,23 @@ export function SchoolFeesPanel({
   );
   const activeHeads = heads.filter((h) => h.status === "active");
   const activeStudents = students.filter((s) => s.status === "active");
+
+  const voucherStudent = voucherCharge
+    ? studentsById.get(voucherCharge.studentId) ?? null
+    : null;
+  const voucherHead = voucherCharge
+    ? headsById.get(voucherCharge.feeHeadId) ?? null
+    : null;
+
+  const receiptCharge = receiptPayment
+    ? chargesById.get(receiptPayment.chargeId) ?? null
+    : null;
+  const receiptStudent = receiptCharge
+    ? studentsById.get(receiptCharge.studentId) ?? null
+    : null;
+  const receiptHead = receiptCharge
+    ? headsById.get(receiptCharge.feeHeadId) ?? null
+    : null;
 
   return (
     <div>
@@ -138,12 +181,20 @@ export function SchoolFeesPanel({
       ) : null}
 
       <section aria-labelledby="charges-heading" className="mt-8">
-        <h2
-          id="charges-heading"
-          className="font-display text-2xl tracking-tight text-ink"
-        >
-          Charges
-        </h2>
+        <div className="flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <h2
+              id="charges-heading"
+              className="font-display text-2xl tracking-tight text-ink"
+            >
+              Fee bills
+            </h2>
+            <p className="mt-1 text-sm text-muted">
+              Pending and partial charges. Open a voucher to preview or print a
+              bill.
+            </p>
+          </div>
+        </div>
         <div className="mt-4">
           <SchoolDataTable
             rows={charges}
@@ -171,12 +222,20 @@ export function SchoolFeesPanel({
                 id: "student",
                 header: "Student",
                 cell: (row) => {
-                  const label = studentLabel.get(row.studentId) ?? "Student";
-                  const [number, ...rest] = label.split(" · ");
+                  const student = studentsById.get(row.studentId);
+                  const name = student
+                    ? `${student.firstName} ${student.lastName}`
+                    : "Student";
                   return (
                     <PersonCell
-                      name={rest.join(" · ") || label}
-                      secondary={number !== label ? number : null}
+                      name={name}
+                      secondary={student?.studentNumber ?? null}
+                      photoUrl={student?.photoUrl}
+                      href={
+                        student
+                          ? `/school/students/${student.id}?school=${schoolId}`
+                          : undefined
+                      }
                     />
                   );
                 },
@@ -206,26 +265,58 @@ export function SchoolFeesPanel({
                 header: "Status",
                 cell: (row) => <StatusBadge status={row.status} />,
               },
+              {
+                id: "voucher",
+                header: "Voucher",
+                cell: (row) => (
+                  <button
+                    type="button"
+                    onClick={() => setVoucherCharge(row)}
+                    className="rounded-md border border-line px-2.5 py-1 text-xs font-medium text-ink hover:border-teal hover:text-teal"
+                  >
+                    {row.status === "paid" ? "View bill" : "Fee voucher"}
+                  </button>
+                ),
+              },
             ]}
           />
         </div>
       </section>
 
       <section aria-labelledby="payments-heading" className="mt-10">
-        <h2
-          id="payments-heading"
-          className="font-display text-2xl tracking-tight text-ink"
-        >
-          Recent payments
-        </h2>
+        <div className="flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <h2
+              id="payments-heading"
+              className="font-display text-2xl tracking-tight text-ink"
+            >
+              Payment receipts
+            </h2>
+            <p className="mt-1 text-sm text-muted">
+              Completed collections. Print a receipt for any payment.
+            </p>
+          </div>
+        </div>
         <div className="mt-4">
           <SchoolDataTable
             rows={payments}
             rowKey={(row) => row.id}
             searchPlaceholder="Search payments"
-            searchText={(row) =>
-              [row.receiptNumber, row.method, row.amount, row.paidOn].join(" ")
-            }
+            searchText={(row) => {
+              const charge = chargesById.get(row.chargeId);
+              const student = charge
+                ? studentsById.get(charge.studentId)
+                : null;
+              return [
+                row.receiptNumber,
+                row.method,
+                row.amount,
+                row.paidOn,
+                student
+                  ? `${student.firstName} ${student.lastName} ${student.studentNumber}`
+                  : "",
+              ].join(" ");
+            }}
             emptyMessage="No payments recorded yet."
             exportFileName="fee-payments"
             selectable={false}
@@ -238,6 +329,24 @@ export function SchoolFeesPanel({
                     {row.receiptNumber}
                   </span>
                 ),
+              },
+              {
+                id: "student",
+                header: "Student",
+                cell: (row) => {
+                  const charge = chargesById.get(row.chargeId);
+                  const student = charge
+                    ? studentsById.get(charge.studentId)
+                    : null;
+                  if (!student) return "—";
+                  return (
+                    <PersonCell
+                      name={`${student.firstName} ${student.lastName}`}
+                      secondary={student.studentNumber}
+                      photoUrl={student.photoUrl}
+                    />
+                  );
+                },
               },
               {
                 id: "amount",
@@ -258,10 +367,50 @@ export function SchoolFeesPanel({
                 header: "Paid on",
                 cell: (row) => formatListDate(row.paidOn),
               },
+              {
+                id: "print",
+                header: "Receipt",
+                cell: (row) => (
+                  <button
+                    type="button"
+                    onClick={() => setReceiptPayment(row)}
+                    className="rounded-md border border-line px-2.5 py-1 text-xs font-medium text-ink hover:border-teal hover:text-teal"
+                  >
+                    Print receipt
+                  </button>
+                ),
+              },
             ]}
           />
         </div>
       </section>
+
+      {voucherCharge && voucherStudent ? (
+        <FeeVoucherDialog
+          open
+          onClose={() => setVoucherCharge(null)}
+          schoolName={schoolName}
+          schoolLogoUrl={schoolLogoUrl}
+          schoolContact={schoolContact}
+          student={voucherStudent}
+          charge={voucherCharge}
+          feeHead={voucherHead}
+        />
+      ) : null}
+
+      {receiptPayment ? (
+        <PaymentReceiptDialog
+          open
+          onClose={() => setReceiptPayment(null)}
+          schoolName={schoolName}
+          schoolLogoUrl={schoolLogoUrl}
+          schoolContact={schoolContact}
+          payment={receiptPayment}
+          charge={receiptCharge}
+          feeHead={receiptHead}
+          student={receiptStudent}
+        />
+      ) : null}
 
       <FormDialog
         open={headDialog.open}

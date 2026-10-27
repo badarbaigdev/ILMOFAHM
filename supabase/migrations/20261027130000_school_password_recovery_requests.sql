@@ -1,6 +1,6 @@
 -- Controlled school-admin password recovery (platform-mediated; not self-service).
 
-create table public.school_password_recovery_requests (
+create table if not exists public.school_password_recovery_requests (
   id uuid primary key default gen_random_uuid(),
   school_id uuid not null
     references public.schools (id)
@@ -51,18 +51,22 @@ create table public.school_password_recovery_requests (
 comment on table public.school_password_recovery_requests is
   'School admin password recovery requests reviewed by platform operators. Self-service Auth reset is not the school-admin path.';
 
-create index school_password_recovery_requests_status_idx
+create index if not exists school_password_recovery_requests_status_idx
   on public.school_password_recovery_requests (status, created_at desc);
-create index school_password_recovery_requests_school_id_idx
+create index if not exists school_password_recovery_requests_school_id_idx
   on public.school_password_recovery_requests (school_id);
-create index school_password_recovery_requests_email_idx
+create index if not exists school_password_recovery_requests_email_idx
   on public.school_password_recovery_requests (requester_email);
 
+drop trigger if exists school_password_recovery_requests_set_updated_at
+  on public.school_password_recovery_requests;
 create trigger school_password_recovery_requests_set_updated_at
 before update on public.school_password_recovery_requests
 for each row
 execute function public.set_updated_at();
 
+drop trigger if exists school_password_recovery_requests_reject_school_id_change
+  on public.school_password_recovery_requests;
 create trigger school_password_recovery_requests_reject_school_id_change
 before update on public.school_password_recovery_requests
 for each row
@@ -74,6 +78,8 @@ revoke all on table public.school_password_recovery_requests
   from anon, authenticated;
 grant select on table public.school_password_recovery_requests to authenticated;
 
+drop policy if exists school_password_recovery_requests_select_operator
+  on public.school_password_recovery_requests;
 create policy school_password_recovery_requests_select_operator
 on public.school_password_recovery_requests
 for select
