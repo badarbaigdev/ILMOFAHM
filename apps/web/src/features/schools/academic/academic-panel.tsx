@@ -1126,6 +1126,11 @@ function LinksSection({ schoolId }: { schoolId: string }) {
       body: "Open daily attendance by section once classes are set up.",
     },
     {
+      href: `/school/timetable?${q}`,
+      title: "Timetables",
+      body: "Schedule weekly lessons by class or teacher once subjects are ready.",
+    },
+    {
       href: `/school/students?${q}&section=directory`,
       title: "Student directory",
       body: "Review who is on roll before building timetables.",
@@ -1141,8 +1146,7 @@ function LinksSection({ schoolId }: { schoolId: string }) {
         Connected workflows
       </h2>
       <p className="mt-1 text-sm text-muted">
-        Academic structure feeds enrolments and attendance. Timetables will
-        plug in here next.
+        Academic structure feeds enrolments, attendance, and weekly timetables.
       </p>
 
       <ul className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -1157,13 +1161,6 @@ function LinksSection({ schoolId }: { schoolId: string }) {
             </Link>
           </li>
         ))}
-        <li className="rounded-2xl border border-dashed border-line bg-paper p-4">
-          <p className="text-sm font-semibold text-ink">Timetables</p>
-          <p className="mt-1 text-sm text-muted">
-            Period schedules by section are not enabled yet. Subjects and
-            sections above are the foundation.
-          </p>
-        </li>
       </ul>
     </section>
   );

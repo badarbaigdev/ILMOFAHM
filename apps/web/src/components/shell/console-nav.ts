@@ -24,6 +24,7 @@ export const SCHOOL_CONSOLE_NAV: ConsoleNavGroup[] = [
     label: "Operations",
     items: [
       { href: "/school/academic", label: "Classes" },
+      { href: "/school/timetable", label: "Timetable" },
       { href: "/school/attendance", label: "Attendance" },
       { href: "/school/fees", label: "Fees" },
     ],
