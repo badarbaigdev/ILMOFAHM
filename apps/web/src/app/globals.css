@@ -130,3 +130,49 @@ summary:focus-visible,
     0 1px 2px rgba(11, 31, 51, 0.05),
     0 4px 12px rgba(15, 118, 110, 0.1);
 }
+
+/* Screen: print sheet is only mounted during printElement(). */
+.school-print-sheet {
+  display: none;
+}
+
+/**
+ * Print only the cloned school document (fee voucher, receipt, etc.).
+ * Uses display:none — visibility hacks break inside dialogs/portals.
+ */
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+
+  body.school-printing {
+    background: white !important;
+    color: #0b1f33 !important;
+  }
+
+  body.school-printing > *:not(.school-print-sheet) {
+    display: none !important;
+  }
+
+  body.school-printing .school-print-sheet {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+    box-shadow: none !important;
+  }
+
+  body.school-printing .school-print-sheet .school-print-face {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    box-shadow: none !important;
+  }
+
+  body.school-printing .school-print-screen-only,
+  body.school-printing [data-print-hidden="true"] {
+    display: none !important;
+  }
+}
