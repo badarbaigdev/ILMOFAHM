@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useMemo, useState } from "react";
 
 import {
@@ -15,6 +16,7 @@ import {
   saveSchoolAttendanceMarksAction,
   submitSchoolAttendanceSessionAction,
 } from "@/features/schools/attendance/actions";
+import type { AttendanceClassRow } from "@/features/schools/attendance/class-rows";
 import type {
   SchoolAttendanceMarkRow,
   SchoolAttendanceSessionRow,
@@ -48,13 +50,14 @@ type DraftMark = {
 type Props = {
   schoolId: string;
   schoolName: string;
+  schoolLogoUrl?: string | null;
   sections: SchoolSectionRow[];
   grades: SchoolGradeRow[];
   students: SchoolStudentRow[];
+  classRows: AttendanceClassRow[];
   sessions: SchoolAttendanceSessionRow[];
   activeSession: SchoolAttendanceSessionRow | null;
   marks: SchoolAttendanceMarkRow[];
-  selectedGradeId: string;
   selectedSectionId: string;
   selectedDate: string;
   daySummary: SchoolAttendanceDaySummary;
@@ -90,22 +93,29 @@ function formatDisplayDate(iso: string): string {
   });
 }
 
+function sessionStatusLabel(status: string): string {
+  if (status === "not_started") return "Not started";
+  return status.replace(/_/g, " ");
+}
+
 export function SchoolAttendancePanel({
   schoolId,
   schoolName,
+  schoolLogoUrl = null,
   sections,
   grades,
   students,
+  classRows,
   sessions,
   activeSession,
   marks,
-  selectedGradeId,
   selectedSectionId,
   selectedDate,
   daySummary,
   canManage,
   canCorrect,
 }: Props) {
+  const router = useRouter();
   const [openState, openAction, openPending] = useActionState(
     openSchoolAttendanceSessionAction,
     initial,
@@ -125,10 +135,9 @@ export function SchoolAttendancePanel({
   const submitDialog = useActionDialog(submitState);
   const correctDialog = useActionDialog(correctState);
 
-  const [gradeId, setGradeId] = useState(selectedGradeId);
-  const [sectionId, setSectionId] = useState(selectedSectionId);
   const [date, setDate] = useState(selectedDate);
   const [search, setSearch] = useState("");
+  const [openingSectionId, setOpeningSectionId] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<DraftMark[]>(() =>
     marks.map((m) => ({
       studentId: m.studentId,
@@ -138,10 +147,8 @@ export function SchoolAttendancePanel({
   );
 
   useEffect(() => {
-    setGradeId(selectedGradeId);
-    setSectionId(selectedSectionId);
     setDate(selectedDate);
-  }, [selectedGradeId, selectedSectionId, selectedDate]);
+  }, [selectedDate]);
 
   useEffect(() => {
     setDrafts(
@@ -152,6 +159,12 @@ export function SchoolAttendancePanel({
       })),
     );
   }, [marks]);
+
+  useEffect(() => {
+    if (!openPending) {
+      setOpeningSectionId(null);
+    }
+  }, [openPending]);
 
   const gradeName = useMemo(
     () => new Map(grades.map((g) => [g.id, g.name])),
@@ -166,13 +179,9 @@ export function SchoolAttendancePanel({
     [students],
   );
 
-  const activeSections = sections.filter((s) => s.status === "active");
-  const filteredSections = gradeId
-    ? activeSections.filter((s) => s.gradeId === gradeId)
-    : activeSections;
-
   const isDraft = activeSession?.status === "draft";
   const isSubmitted = activeSession?.status === "submitted";
+  const showingRegister = Boolean(selectedSectionId);
 
   const rosterCounts = countAttendanceStatuses(drafts);
   const summarySource = activeSession ? rosterCounts : daySummary.byStatus;
@@ -205,18 +214,54 @@ export function SchoolAttendancePanel({
     return `${gradeName.get(section.gradeId) ?? "Class"} · ${section.name}`;
   }
 
+  function navigateToDate(nextDate: string) {
+    setDate(nextDate);
+    const params = new URLSearchParams({
+      school: schoolId,
+      date: nextDate,
+    });
+    if (selectedSectionId) {
+      params.set("section", selectedSectionId);
+    }
+    router.push(`/school/attendance?${params.toString()}`);
+  }
+
+  const listHref = `/school/attendance?school=${encodeURIComponent(schoolId)}&date=${encodeURIComponent(date)}`;
+
   return (
     <div className="pb-24">
-      {/* 1. Page title and date */}
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-[0.65rem] font-semibold tracking-[0.2em] text-teal uppercase">
-            {schoolName}
-          </p>
+          <div className="flex items-center gap-2.5">
+            {schoolLogoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={schoolLogoUrl}
+                alt=""
+                className="h-9 w-9 rounded-md border border-line bg-paper-elevated object-contain"
+              />
+            ) : null}
+            <p className="text-[0.65rem] font-semibold tracking-[0.2em] text-teal uppercase">
+              {schoolName}
+            </p>
+          </div>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight text-ink">
             Attendance
           </h1>
           <p className="mt-1 text-sm text-muted">
+            {showingRegister ? (
+              <>
+                <a
+                  href={listHref}
+                  className="font-medium text-teal no-underline hover:underline"
+                >
+                  All classes
+                </a>
+                <span className="mx-2 text-line">·</span>
+                {sectionLabel(selectedSectionId)}
+                <span className="mx-2 text-line">·</span>
+              </>
+            ) : null}
             {formatDisplayDate(selectedDate)}
             {activeSession ? (
               <>
@@ -226,27 +271,17 @@ export function SchoolAttendancePanel({
             ) : null}
           </p>
         </div>
-        {canManage && sectionId ? (
-          <form action={openAction}>
-            <input type="hidden" name="school_id" value={schoolId} />
-            <input type="hidden" name="section_id" value={sectionId} />
-            <input type="hidden" name="attendance_date" value={date} />
-            <button
-              type="submit"
-              disabled={openPending || !sectionId}
-              className="rounded-md bg-teal px-3 py-2 text-sm font-medium text-white disabled:opacity-60"
-            >
-              {openPending
-                ? "Opening…"
-                : activeSession
-                  ? "Reload register"
-                  : "Open register"}
-            </button>
-          </form>
-        ) : null}
+        <label className="block text-sm">
+          <span className="sr-only">Attendance date</span>
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => navigateToDate(e.target.value)}
+            className="rounded-md border border-line bg-paper-elevated px-3 py-2 text-ink"
+          />
+        </label>
       </header>
 
-      {/* 2. Attendance summary cards */}
       <section
         aria-label="Attendance summary"
         className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5"
@@ -267,113 +302,175 @@ export function SchoolAttendancePanel({
         {activeSession
           ? `${rosterCounts.total} students on this register`
           : daySummary.markedStudents > 0
-            ? `${daySummary.markedStudents} marked today · ${daySummary.draftSessions} draft · ${daySummary.submittedSessions} submitted${
+            ? `${daySummary.markedStudents} marked · ${daySummary.draftSessions} draft · ${daySummary.submittedSessions} submitted${
                 daySummary.presentRate != null
                   ? ` · ${daySummary.presentRate}% in school`
                   : ""
               }`
-            : "Open a class register to start marking."}
+            : "Choose a class below to mark attendance."}
       </p>
 
-      {/* 3. Filters */}
-      <section
-        aria-label="Attendance filters"
-        className="mt-5 rounded-2xl border border-line bg-paper-elevated p-4"
-      >
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <label className="block text-sm">
-            <span className="text-muted">Date</span>
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="mt-1 w-full rounded-md border border-line bg-paper px-3 py-2 text-ink"
-            />
-          </label>
-          <label className="block text-sm">
-            <span className="text-muted">Class</span>
-            <select
-              value={gradeId}
-              onChange={(e) => {
-                setGradeId(e.target.value);
-                setSectionId("");
-              }}
-              className="mt-1 w-full rounded-md border border-line bg-paper px-3 py-2 text-ink"
-            >
-              <option value="">All classes</option>
-              {grades
-                .filter((g) => g.status === "active")
-                .map((grade) => (
-                  <option key={grade.id} value={grade.id}>
-                    {grade.name}
-                  </option>
-                ))}
-            </select>
-          </label>
-          <label className="block text-sm">
-            <span className="text-muted">Section</span>
-            <select
-              value={sectionId}
-              onChange={(e) => setSectionId(e.target.value)}
-              className="mt-1 w-full rounded-md border border-line bg-paper px-3 py-2 text-ink"
-            >
-              <option value="">Select section</option>
-              {filteredSections.map((section) => (
-                <option key={section.id} value={section.id}>
-                  {sectionLabel(section.id)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="block text-sm">
-            <span className="text-muted">Search students</span>
-            <input
-              type="search"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Name or number"
-              className="mt-1 w-full rounded-md border border-line bg-paper px-3 py-2 text-ink"
-            />
-          </label>
-        </div>
+      {openState.error ? (
+        <p role="alert" className="mt-4 text-sm text-red-700">
+          {openState.error}
+        </p>
+      ) : null}
 
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          {canManage ? (
-            <form action={openAction} className="flex flex-wrap gap-2">
-              <input type="hidden" name="school_id" value={schoolId} />
-              <input type="hidden" name="section_id" value={sectionId} />
-              <input type="hidden" name="attendance_date" value={date} />
-              <button
-                type="submit"
-                disabled={openPending || !sectionId}
-                className="rounded-md bg-ink px-3 py-2 text-sm font-medium text-paper-elevated disabled:opacity-60"
-              >
-                {openPending ? "Opening…" : "Load register"}
-              </button>
-            </form>
-          ) : null}
-          <a
-            href={`/school/attendance?school=${schoolId}&date=${encodeURIComponent(date)}${
-              gradeId ? `&grade=${encodeURIComponent(gradeId)}` : ""
-            }${
-              sectionId ? `&section=${encodeURIComponent(sectionId)}` : ""
-            }`}
-            className="rounded-md border border-line px-3 py-2 text-sm font-medium text-ink no-underline"
-          >
-            Apply filters
-          </a>
-          {openState.error ? (
-            <p role="alert" className="text-sm text-red-700">
-              {openState.error}
-            </p>
-          ) : null}
-        </div>
-      </section>
-
-      {/* 4 + 5. Student table + bulk / save */}
-      {activeSession ? (
-        <section aria-labelledby="roster-heading" className="mt-6">
+      {!showingRegister ? (
+        <section aria-labelledby="classes-heading" className="mt-6">
           <div className="flex flex-wrap items-end justify-between gap-2">
+            <div>
+              <h2
+                id="classes-heading"
+                className="text-sm font-semibold tracking-wide text-ink uppercase"
+              >
+                Classes
+              </h2>
+              <p className="mt-1 text-sm text-muted">
+                Select a class to open its register. Enrolment counts show
+                current placement.
+              </p>
+            </div>
+          </div>
+
+          {classRows.length === 0 ? (
+            <p className="mt-6 rounded-2xl border border-dashed border-line bg-paper-elevated px-5 py-10 text-center text-sm text-muted">
+              No active classes yet. Create grades and sections under Classes,
+              then return here to mark attendance.
+            </p>
+          ) : (
+            <>
+              {canManage
+                ? classRows.map((row) => (
+                    <form
+                      key={`form-${row.sectionId}`}
+                      id={`open-attendance-${row.sectionId}`}
+                      action={openAction}
+                      onSubmit={() => setOpeningSectionId(row.sectionId)}
+                      className="hidden"
+                    >
+                      <input type="hidden" name="school_id" value={schoolId} />
+                      <input
+                        type="hidden"
+                        name="section_id"
+                        value={row.sectionId}
+                      />
+                      <input type="hidden" name="attendance_date" value={date} />
+                    </form>
+                  ))
+                : null}
+              <div className="mt-4 overflow-x-auto rounded-2xl border border-line bg-paper-elevated">
+              <table className="min-w-full text-left text-sm">
+                <thead className="border-b border-line bg-paper text-xs tracking-wide text-muted uppercase">
+                  <tr>
+                    <th className="px-4 py-3 font-medium">Class</th>
+                    <th className="px-4 py-3 font-medium">Section</th>
+                    <th className="px-4 py-3 font-medium">Students</th>
+                    <th className="px-4 py-3 font-medium">Today</th>
+                    <th className="px-4 py-3 font-medium">
+                      <span className="sr-only">Open</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-line/70">
+                  {classRows.map((row) => {
+                    const viewHref = `/school/attendance?school=${encodeURIComponent(schoolId)}&section=${encodeURIComponent(row.sectionId)}&date=${encodeURIComponent(date)}`;
+                    const formId = `open-attendance-${row.sectionId}`;
+                    const isOpening =
+                      openPending && openingSectionId === row.sectionId;
+                    const canView = row.sessionStatus !== "not_started";
+
+                    return (
+                      <tr
+                        key={row.sectionId}
+                        className="transition hover:bg-paper/80"
+                      >
+                        <td className="px-4 py-3 font-medium text-ink">
+                          {canManage ? (
+                            <button
+                              type="submit"
+                              form={formId}
+                              disabled={openPending}
+                              className="text-left font-medium text-ink hover:text-teal disabled:opacity-60"
+                            >
+                              {row.gradeName}
+                            </button>
+                          ) : canView ? (
+                            <a
+                              href={viewHref}
+                              className="font-medium text-ink no-underline hover:text-teal"
+                            >
+                              {row.gradeName}
+                            </a>
+                          ) : (
+                            row.gradeName
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-ink">
+                          {canManage ? (
+                            <button
+                              type="submit"
+                              form={formId}
+                              disabled={openPending}
+                              className="text-left text-ink hover:text-teal disabled:opacity-60"
+                            >
+                              {row.sectionName}
+                            </button>
+                          ) : (
+                            row.sectionName
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-muted">
+                          {row.studentCount}
+                        </td>
+                        <td className="px-4 py-3">
+                          {row.sessionStatus === "not_started" ? (
+                            <span className="text-xs text-muted">
+                              {sessionStatusLabel(row.sessionStatus)}
+                            </span>
+                          ) : (
+                            <StatusBadge status={row.sessionStatus} />
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          {canManage ? (
+                            <button
+                              type="submit"
+                              form={formId}
+                              disabled={openPending}
+                              className="rounded-md bg-teal px-3 py-1.5 text-sm font-medium text-white disabled:opacity-60"
+                            >
+                              {isOpening
+                                ? "Opening…"
+                                : row.sessionStatus === "not_started"
+                                  ? "Mark"
+                                  : "Open"}
+                            </button>
+                          ) : canView ? (
+                            <a
+                              href={viewHref}
+                              className="rounded-md border border-line px-3 py-1.5 text-sm font-medium text-ink no-underline"
+                            >
+                              View
+                            </a>
+                          ) : (
+                            <span className="text-xs text-muted">—</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            </>
+          )}
+        </section>
+      ) : null}
+
+      {showingRegister && activeSession ? (
+        <section aria-labelledby="roster-heading" className="mt-6">
+          <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
               <h2
                 id="roster-heading"
@@ -389,6 +486,16 @@ export function SchoolAttendancePanel({
                   : ""}
               </p>
             </div>
+            <label className="block text-sm">
+              <span className="sr-only">Search students</span>
+              <input
+                type="search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search students"
+                className="rounded-md border border-line bg-paper-elevated px-3 py-2 text-ink"
+              />
+            </label>
           </div>
 
           {drafts.length === 0 ? (
@@ -400,7 +507,6 @@ export function SchoolAttendancePanel({
               <input type="hidden" name="school_id" value={schoolId} />
               <input type="hidden" name="session_id" value={activeSession.id} />
 
-              {/* Full roster payloads — search only filters the visible rows. */}
               {drafts.map((draft) => (
                 <div key={`payload-${draft.studentId}`} className="hidden">
                   <input
@@ -499,7 +605,6 @@ export function SchoolAttendancePanel({
                 </table>
               </div>
 
-              {/* 5. Bulk actions and save/submit */}
               {isDraft && canManage ? (
                 <div className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-paper/95 px-4 py-3 backdrop-blur">
                   <div className="mx-auto flex w-full max-w-none flex-wrap items-center justify-between gap-3 px-3 sm:px-4 lg:px-5">
@@ -631,57 +736,75 @@ export function SchoolAttendancePanel({
             </div>
           ) : null}
         </section>
-      ) : (
+      ) : null}
+
+      {showingRegister && !activeSession ? (
         <section className="mt-6 rounded-2xl border border-dashed border-line bg-paper-elevated px-5 py-10 text-center">
           <p className="text-sm font-medium text-ink">
-            Pick a date, class, and section, then open the register.
+            No register for {sectionLabel(selectedSectionId)} on{" "}
+            {formatDisplayDate(selectedDate)}.
           </p>
-          <p className="mt-2 text-sm text-muted">
-            Quick marking stays on one screen — save a draft, then submit when
-            the register is complete.
-          </p>
-        </section>
-      )}
-
-      {/* 6. Trends / reporting (secondary) */}
-      <section
-        aria-labelledby="recent-sessions-heading"
-        className="mt-10 border-t border-line/70 pt-8"
-      >
-        <div className="flex flex-wrap items-end justify-between gap-2">
-          <div>
-            <h2
-              id="recent-sessions-heading"
-              className="text-sm font-semibold tracking-wide text-ink uppercase"
-            >
-              Recent sessions
-            </h2>
-            <p className="mt-1 text-sm text-muted">
-              Trends and full reports stay secondary to marking.
-            </p>
-          </div>
-        </div>
-        {sessions.length === 0 ? (
-          <p className="mt-4 text-sm text-muted">No attendance sessions yet.</p>
-        ) : (
-          <ul className="mt-4 divide-y divide-line/70 rounded-2xl border border-line bg-paper-elevated">
-            {sessions.slice(0, 8).map((session) => (
-              <li
-                key={session.id}
-                className="flex items-center justify-between gap-3 px-4 py-3 text-sm"
+          {canManage ? (
+            <form action={openAction} className="mt-4 inline-block">
+              <input type="hidden" name="school_id" value={schoolId} />
+              <input type="hidden" name="section_id" value={selectedSectionId} />
+              <input type="hidden" name="attendance_date" value={date} />
+              <button
+                type="submit"
+                disabled={openPending}
+                className="rounded-md bg-teal px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
               >
-                <a
-                  href={`/school/attendance?school=${schoolId}&section=${session.sectionId}&date=${session.attendanceDate}`}
-                  className="min-w-0 font-medium text-ink no-underline hover:underline"
+                {openPending ? "Opening…" : "Open register"}
+              </button>
+            </form>
+          ) : (
+            <p className="mt-2 text-sm text-muted">
+              Attendance has not been started for this class yet.
+            </p>
+          )}
+        </section>
+      ) : null}
+
+      {!showingRegister ? (
+        <section
+          aria-labelledby="recent-sessions-heading"
+          className="mt-10 border-t border-line/70 pt-8"
+        >
+          <div className="flex flex-wrap items-end justify-between gap-2">
+            <div>
+              <h2
+                id="recent-sessions-heading"
+                className="text-sm font-semibold tracking-wide text-ink uppercase"
+              >
+                Recent sessions
+              </h2>
+              <p className="mt-1 text-sm text-muted">
+                Jump back to a register you already opened.
+              </p>
+            </div>
+          </div>
+          {sessions.length === 0 ? (
+            <p className="mt-4 text-sm text-muted">No attendance sessions yet.</p>
+          ) : (
+            <ul className="mt-4 divide-y divide-line/70 rounded-2xl border border-line bg-paper-elevated">
+              {sessions.slice(0, 8).map((session) => (
+                <li
+                  key={session.id}
+                  className="flex items-center justify-between gap-3 px-4 py-3 text-sm"
                 >
-                  {sectionLabel(session.sectionId)} · {session.attendanceDate}
-                </a>
-                <StatusBadge status={session.status} />
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+                  <a
+                    href={`/school/attendance?school=${schoolId}&section=${session.sectionId}&date=${session.attendanceDate}`}
+                    className="min-w-0 font-medium text-ink no-underline hover:underline"
+                  >
+                    {sectionLabel(session.sectionId)} · {session.attendanceDate}
+                  </a>
+                  <StatusBadge status={session.status} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      ) : null}
     </div>
   );
 }

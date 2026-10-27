@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useId, useRef, useState } from "react";
 
 import { ToastHost } from "@/components/ui/toast";
 import { brand } from "@/lib/brand";
@@ -25,6 +26,9 @@ type Props = {
   userRole: string;
   signOutAction: (formData: FormData) => void | Promise<void>;
   children: React.ReactNode;
+  brandLabel?: string;
+  brandLogoUrl?: string | null;
+  accountHref?: string;
 };
 
 export function isConsoleNavActive(
@@ -47,10 +51,22 @@ export function ConsoleShell({
   userRole,
   signOutAction,
   children,
+  brandLabel,
+  brandLogoUrl,
+  accountHref,
 }: Props) {
   const pathname = usePathname() ?? (variant === "platform" ? "/platform" : "/school");
   const homeHref = variant === "platform" ? "/platform" : "/school";
   const flatItems = navGroups.flatMap((g) => g.items);
+  const schoolBrand =
+    variant === "school" ? brandLabel?.trim() || "School console" : null;
+  const initials =
+    userLabel
+      .split(/\s+/)
+      .map((p) => p[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase() || "U";
 
   return (
     <div className="flex min-h-screen bg-[#eef1f4] text-ink">
@@ -65,9 +81,19 @@ export function ConsoleShell({
           </p>
           <Link
             href={homeHref}
-            className="mt-1 block text-lg font-semibold tracking-tight text-white no-underline"
+            className="mt-2 flex items-center gap-2.5 no-underline"
           >
-            {variant === "platform" ? "Platform console" : "School console"}
+            {variant === "school" && brandLogoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={brandLogoUrl}
+                alt=""
+                className="h-9 w-9 shrink-0 rounded-md bg-white/10 object-contain"
+              />
+            ) : null}
+            <span className="min-w-0 text-lg font-semibold tracking-tight text-white">
+              {variant === "platform" ? "Platform console" : schoolBrand}
+            </span>
           </Link>
         </div>
 
@@ -76,15 +102,19 @@ export function ConsoleShell({
             aria-hidden
             className="flex h-10 w-10 items-center justify-center rounded-full bg-teal text-sm font-semibold"
           >
-            {userLabel
-              .split(/\s+/)
-              .map((p) => p[0])
-              .join("")
-              .slice(0, 2)
-              .toUpperCase() || "U"}
+            {initials}
           </div>
           <div className="min-w-0">
-            <p className="truncate text-sm font-medium">{userLabel}</p>
+            {variant === "school" && accountHref ? (
+              <Link
+                href={accountHref}
+                className="block truncate text-sm font-medium text-white no-underline hover:underline"
+              >
+                {userLabel}
+              </Link>
+            ) : (
+              <p className="truncate text-sm font-medium">{userLabel}</p>
+            )}
             <p className="text-xs text-white/60">{userRole}</p>
           </div>
         </div>
@@ -119,14 +149,24 @@ export function ConsoleShell({
           ))}
         </nav>
 
-        <form action={signOutAction} className="border-t border-white/10 px-5 py-3">
-          <button
-            type="submit"
-            className="text-xs text-white/60 underline-offset-2 hover:text-white hover:underline"
-          >
-            Sign out
-          </button>
-        </form>
+        <div className="border-t border-white/10 px-5 py-3">
+          {variant === "school" && accountHref ? (
+            <Link
+              href={accountHref}
+              className="mb-2 block text-xs text-white/60 no-underline underline-offset-2 hover:text-white hover:underline"
+            >
+              Account
+            </Link>
+          ) : null}
+          <form action={signOutAction}>
+            <button
+              type="submit"
+              className="text-xs text-white/60 underline-offset-2 hover:text-white hover:underline"
+            >
+              Sign out
+            </button>
+          </form>
+        </div>
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
@@ -159,15 +199,12 @@ export function ConsoleShell({
             </form>
           </header>
         ) : (
-          <header className="flex items-center justify-end border-b border-line bg-paper-elevated px-3 py-3 sm:px-4 lg:hidden">
-            <form action={signOutAction}>
-              <button
-                type="submit"
-                className="text-sm text-ink underline-offset-2 hover:underline"
-              >
-                Sign out
-              </button>
-            </form>
+          <header className="flex items-center justify-end border-b border-line bg-paper-elevated px-3 py-3 sm:px-4 lg:px-5">
+            <AccountMenu
+              userLabel={userLabel}
+              accountHref={accountHref}
+              signOutAction={signOutAction}
+            />
           </header>
         )}
 
@@ -196,6 +233,83 @@ export function ConsoleShell({
         <div className="flex-1">{children}</div>
         <ToastHost />
       </div>
+    </div>
+  );
+}
+
+function AccountMenu({
+  userLabel,
+  accountHref,
+  signOutAction,
+}: {
+  userLabel: string;
+  accountHref?: string;
+  signOutAction: (formData: FormData) => void | Promise<void>;
+}) {
+  const [open, setOpen] = useState(false);
+  const menuId = useId();
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onPointerDown(event: MouseEvent) {
+      if (!rootRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    }
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open]);
+
+  return (
+    <div ref={rootRef} className="relative">
+      <button
+        type="button"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-controls={menuId}
+        onClick={() => setOpen((v) => !v)}
+        className="inline-flex items-center gap-2 rounded-md border border-line bg-paper px-3 py-1.5 text-sm text-ink"
+      >
+        <span className="max-w-[10rem] truncate">{userLabel}</span>
+        <span aria-hidden className="text-muted">
+          ▾
+        </span>
+      </button>
+      {open ? (
+        <div
+          id={menuId}
+          role="menu"
+          className="absolute right-0 z-30 mt-1 min-w-[11rem] rounded-md border border-line bg-paper-elevated py-1 shadow-md"
+        >
+          {accountHref ? (
+            <Link
+              href={accountHref}
+              role="menuitem"
+              className="block px-3 py-2 text-sm text-ink no-underline hover:bg-paper"
+              onClick={() => setOpen(false)}
+            >
+              View profile
+            </Link>
+          ) : null}
+          <form action={signOutAction}>
+            <button
+              type="submit"
+              role="menuitem"
+              className="block w-full px-3 py-2 text-left text-sm text-ink hover:bg-paper"
+            >
+              Sign out
+            </button>
+          </form>
+        </div>
+      ) : null}
     </div>
   );
 }

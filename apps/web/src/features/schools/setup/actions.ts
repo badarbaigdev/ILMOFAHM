@@ -112,18 +112,38 @@ export async function updateSchoolBrandingAction(
     return { error: "School is required.", success: null };
   }
 
-  const validated = validateOrganizationBrandingInput({
-    websiteUrl: String(formData.get("website_url") ?? ""),
-    brandDisplayName: String(formData.get("brand_display_name") ?? ""),
-    brandPrimaryColor: String(formData.get("brand_primary_color") ?? ""),
-    brandLogoUrl: String(formData.get("brand_logo_url") ?? ""),
-  });
-  if (!validated.ok) {
-    return { error: validated.error, success: null };
-  }
+  let brandLogoUrl = String(formData.get("brand_logo_url") ?? "").trim();
+  const logoFile = formData.get("logo_file");
 
   try {
     const { supabase } = await requireManagerForSchool(schoolId);
+
+    if (logoFile instanceof File && logoFile.size > 0) {
+      const { uploadSchoolMedia } = await import(
+        "@/features/schools/media/upload"
+      );
+      const uploaded = await uploadSchoolMedia({
+        supabase,
+        schoolId,
+        kind: "logo",
+        file: logoFile,
+      });
+      if (!uploaded.ok) {
+        return { error: uploaded.error, success: null };
+      }
+      brandLogoUrl = uploaded.publicUrl;
+    }
+
+    const validated = validateOrganizationBrandingInput({
+      websiteUrl: String(formData.get("website_url") ?? ""),
+      brandDisplayName: String(formData.get("brand_display_name") ?? ""),
+      brandPrimaryColor: String(formData.get("brand_primary_color") ?? ""),
+      brandLogoUrl,
+    });
+    if (!validated.ok) {
+      return { error: validated.error, success: null };
+    }
+
     const { error } = await supabase.rpc("update_school_branding", {
       p_school_id: schoolId,
       p_website_url: validated.value.websiteUrl,

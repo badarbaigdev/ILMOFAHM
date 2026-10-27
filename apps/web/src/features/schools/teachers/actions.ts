@@ -153,3 +153,80 @@ export async function archiveSchoolTeacherAction(
   revalidateTeachers(schoolId);
   return { error: null, success: "Teacher archived." };
 }
+
+export async function updateSchoolTeacherAction(
+  _prev: SchoolTeacherActionState,
+  formData: FormData,
+): Promise<SchoolTeacherActionState> {
+  const schoolId = String(formData.get("school_id") ?? "").trim();
+  const teacherId = String(formData.get("teacher_id") ?? "").trim();
+  if (!isUuid(schoolId) || !isUuid(teacherId)) {
+    return { error: "Teacher is required.", success: null };
+  }
+
+  const validated = validateTeacherInput({
+    staffNumber: String(formData.get("staff_number") ?? ""),
+    firstName: String(formData.get("first_name") ?? ""),
+    lastName: String(formData.get("last_name") ?? ""),
+    email: String(formData.get("email") ?? ""),
+    phone: String(formData.get("phone") ?? ""),
+    primarySubject: String(formData.get("primary_subject") ?? ""),
+  });
+  if (!validated.ok) {
+    return { error: validated.error, success: null };
+  }
+
+  const { supabase, user } = await requireUser(schoolId);
+  try {
+    await authorizeSchool(supabase, user.id, schoolId, "teacher.manage");
+  } catch (error) {
+    if (isSchoolAuthorizationError(error)) {
+      return { error: error.message, success: null };
+    }
+    throw error;
+  }
+
+  let photoUrl = String(formData.get("photo_url") ?? "").trim() || null;
+  const photo = formData.get("photo");
+  if (photo instanceof File && photo.size > 0) {
+    const { uploadSchoolMedia } = await import("@/features/schools/media/upload");
+    const uploaded = await uploadSchoolMedia({
+      supabase,
+      schoolId,
+      kind: "teachers",
+      file: photo,
+    });
+    if (!uploaded.ok) {
+      return { error: uploaded.error, success: null };
+    }
+    photoUrl = uploaded.publicUrl;
+  }
+
+  const { error } = await supabase.rpc("update_school_teacher", {
+    p_teacher_id: teacherId,
+    p_staff_number: validated.value.staffNumber,
+    p_first_name: validated.value.firstName,
+    p_last_name: validated.value.lastName,
+    p_email: validated.value.email,
+    p_phone: validated.value.phone,
+    p_primary_subject: validated.value.primarySubject,
+    p_photo_url: photoUrl,
+  });
+
+  if (error) {
+    if (error.message?.includes("Not authorized")) {
+      return {
+        error: "You are not allowed to manage teachers.",
+        success: null,
+      };
+    }
+    return {
+      error: error.message || "Could not update teacher.",
+      success: null,
+    };
+  }
+
+  revalidateTeachers(schoolId);
+  revalidatePath(`/school/teachers/${teacherId}`);
+  return { error: null, success: "Teacher profile saved." };
+}

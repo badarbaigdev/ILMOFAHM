@@ -143,9 +143,20 @@ export function SchoolBrandingPanel({
         Branding
       </h2>
       <p className="mt-2 max-w-2xl text-sm text-muted">
-        Optional public website and brand accents. Logo must be an https URL
-        for now.
+        Optional public website and brand accents. Upload a logo or paste an
+        https URL override.
       </p>
+      {school.brandLogoUrl ? (
+        <div className="mt-4 flex items-center gap-3">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={school.brandLogoUrl}
+            alt=""
+            className="h-12 w-12 rounded-md border border-line object-contain bg-paper"
+          />
+          <p className="text-sm text-muted">Current logo</p>
+        </div>
+      ) : null}
       {canManage ? (
         <form action={action} className="mt-6 max-w-lg space-y-4" noValidate>
           <input type="hidden" name="school_id" value={school.id} />
@@ -164,8 +175,23 @@ export function SchoolBrandingPanel({
             name="brand_primary_color"
             defaultValue={school.brandPrimaryColor ?? ""}
           />
+          <div className="space-y-1.5">
+            <label
+              htmlFor="logo_file"
+              className="block text-sm font-medium text-ink"
+            >
+              Logo file
+            </label>
+            <input
+              id="logo_file"
+              type="file"
+              name="logo_file"
+              accept="image/*"
+              className="block w-full text-sm text-muted file:mr-3 file:rounded-md file:border file:border-line file:bg-paper file:px-3 file:py-1.5 file:text-sm file:text-ink"
+            />
+          </div>
           <Field
-            label="Logo URL (https)"
+            label="Logo URL (optional https override)"
             name="brand_logo_url"
             defaultValue={school.brandLogoUrl ?? ""}
           />

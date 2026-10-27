@@ -204,6 +204,8 @@ export function SchoolStudentsPanel({
                   <PersonCell
                     name={`${row.firstName} ${row.lastName}`}
                     secondary={row.rollHint}
+                    href={`/school/students/${row.id}?school=${schoolId}`}
+                    photoUrl={row.photoUrl}
                   />
                 ),
               },
@@ -313,10 +315,13 @@ export function SchoolStudentsPanel({
                 cell: (row) => {
                   const label = studentLabel.get(row.studentId) ?? "Student";
                   const [number, ...rest] = label.split(" · ");
+                  const student = students.find((s) => s.id === row.studentId);
                   return (
                     <PersonCell
                       name={rest.join(" · ") || label}
                       secondary={number !== label ? number : null}
+                      href={`/school/students/${row.studentId}?school=${schoolId}`}
+                      photoUrl={student?.photoUrl}
                     />
                   );
                 },

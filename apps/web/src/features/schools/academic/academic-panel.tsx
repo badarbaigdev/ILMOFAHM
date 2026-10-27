@@ -12,12 +12,15 @@ import { useActionDialog } from "@/components/ui/use-action-dialog";
 import {
   type SchoolAcademicActionState,
   archiveSchoolGradeAction,
+  archiveSchoolSectionAction,
   createSchoolAcademicTermAction,
   createSchoolAcademicYearAction,
   createSchoolGradeAction,
   createSchoolSectionAction,
   createSchoolSubjectAction,
   updateSchoolAcademicYearAction,
+  updateSchoolGradeAction,
+  updateSchoolSectionAction,
 } from "@/features/schools/academic/actions";
 import type {
   SchoolAcademicTermRow,
@@ -453,12 +456,30 @@ function GradesSection({
     archiveSchoolGradeAction,
     initialState,
   );
+  const [editGradeState, editGradeAction, editGradePending] = useActionState(
+    updateSchoolGradeAction,
+    initialState,
+  );
+  const [editSectionState, editSectionAction, editSectionPending] =
+    useActionState(updateSchoolSectionAction, initialState);
+  const [archiveSectionState, archiveSectionAction, archiveSectionPending] =
+    useActionState(archiveSchoolSectionAction, initialState);
   const gradeDialog = useActionDialog(gradeState);
   const sectionDialog = useActionDialog(sectionState);
   const archiveDialog = useActionDialog(archiveState);
+  const editGradeDialog = useActionDialog(editGradeState);
+  const editSectionDialog = useActionDialog(editSectionState);
+  const archiveSectionDialog = useActionDialog(archiveSectionState);
   const [archiveTarget, setArchiveTarget] = useState<SchoolGradeRow | null>(
     null,
   );
+  const [editGradeTarget, setEditGradeTarget] = useState<SchoolGradeRow | null>(
+    null,
+  );
+  const [editSectionTarget, setEditSectionTarget] =
+    useState<SchoolSectionRow | null>(null);
+  const [archiveSectionTarget, setArchiveSectionTarget] =
+    useState<SchoolSectionRow | null>(null);
 
   const sortedGrades = useMemo(
     () => [...grades].sort((a, b) => a.sortOrder - b.sortOrder),
@@ -626,16 +647,50 @@ function GradesSection({
                               className="rounded-xl border border-line bg-paper px-3 py-3"
                             >
                               <div className="flex flex-wrap items-center justify-between gap-2">
-                                <p className="text-sm font-medium text-ink">
-                                  Section {section.name}
-                                </p>
-                                <p className="text-xs text-muted">
-                                  {sectionEnrolled}
-                                  {section.capacity != null
-                                    ? ` / ${section.capacity}`
-                                    : ""}{" "}
-                                  enrolled
-                                </p>
+                                <div>
+                                  <p className="text-sm font-medium text-ink">
+                                    Section {section.name}
+                                  </p>
+                                  <p className="mt-0.5 text-xs text-muted">
+                                    {sectionEnrolled}
+                                    {section.capacity != null
+                                      ? ` / ${section.capacity}`
+                                      : ""}{" "}
+                                    enrolled
+                                    {section.status !== "active" ? (
+                                      <>
+                                        <span className="mx-1.5 text-line">
+                                          ·
+                                        </span>
+                                        <StatusBadge status={section.status} />
+                                      </>
+                                    ) : null}
+                                  </p>
+                                </div>
+                                {canManage && section.status === "active" ? (
+                                  <div className="flex flex-wrap gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setEditSectionTarget(section);
+                                        editSectionDialog.openDialog();
+                                      }}
+                                      className="rounded-md border border-line px-2.5 py-1 text-xs font-medium text-ink"
+                                    >
+                                      Edit
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setArchiveSectionTarget(section);
+                                        archiveSectionDialog.openDialog();
+                                      }}
+                                      className="rounded-md border border-line px-2.5 py-1 text-xs font-medium text-muted"
+                                    >
+                                      Archive
+                                    </button>
+                                  </div>
+                                ) : null}
                               </div>
                               {fill != null ? (
                                 <div
@@ -659,16 +714,28 @@ function GradesSection({
                     )}
 
                     {canManage && grade.status === "active" ? (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setArchiveTarget(grade);
-                          archiveDialog.openDialog();
-                        }}
-                        className="mt-4 text-xs text-muted underline-offset-2 hover:underline"
-                      >
-                        Archive grade
-                      </button>
+                      <div className="mt-4 flex flex-wrap gap-3">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditGradeTarget(grade);
+                            editGradeDialog.openDialog();
+                          }}
+                          className="text-xs font-medium text-teal underline-offset-2 hover:underline"
+                        >
+                          Edit grade
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setArchiveTarget(grade);
+                            archiveDialog.openDialog();
+                          }}
+                          className="text-xs text-muted underline-offset-2 hover:underline"
+                        >
+                          Archive grade
+                        </button>
+                      </div>
                     ) : null}
                   </div>
                 ) : null}
@@ -761,6 +828,113 @@ function GradesSection({
       >
         <input type="hidden" name="school_id" value={schoolId} />
         <input type="hidden" name="grade_id" value={archiveTarget?.id ?? ""} />
+      </FormDialog>
+
+      <FormDialog
+        open={editGradeDialog.open && editGradeTarget !== null}
+        onClose={() => {
+          editGradeDialog.closeDialog();
+          setEditGradeTarget(null);
+        }}
+        title="Edit grade"
+        description="Update the grade name, code, or sort order."
+        submitLabel="Save grade"
+        formAction={editGradeAction}
+        busy={editGradePending}
+        dirty={editGradeDialog.dirty}
+        onDirtyChange={editGradeDialog.setDirty}
+        error={editGradeState.error}
+      >
+        <input type="hidden" name="school_id" value={schoolId} />
+        <input type="hidden" name="grade_id" value={editGradeTarget?.id ?? ""} />
+        <DialogField
+          id="edit-grade-name"
+          name="name"
+          label="Name"
+          required
+          defaultValue={editGradeTarget?.name ?? ""}
+        />
+        <DialogField
+          id="edit-grade-code"
+          name="code"
+          label="Code (optional)"
+          defaultValue={editGradeTarget?.code ?? ""}
+        />
+        <DialogField
+          id="edit-grade-sort"
+          name="sort_order"
+          label="Sort order"
+          type="number"
+          required
+          defaultValue={String(editGradeTarget?.sortOrder ?? 1)}
+        />
+      </FormDialog>
+
+      <FormDialog
+        open={editSectionDialog.open && editSectionTarget !== null}
+        onClose={() => {
+          editSectionDialog.closeDialog();
+          setEditSectionTarget(null);
+        }}
+        title="Edit section"
+        description="Update the section name or capacity."
+        submitLabel="Save section"
+        formAction={editSectionAction}
+        busy={editSectionPending}
+        dirty={editSectionDialog.dirty}
+        onDirtyChange={editSectionDialog.setDirty}
+        error={editSectionState.error}
+      >
+        <input type="hidden" name="school_id" value={schoolId} />
+        <input
+          type="hidden"
+          name="section_id"
+          value={editSectionTarget?.id ?? ""}
+        />
+        <DialogField
+          id="edit-section-name"
+          name="name"
+          label="Name"
+          required
+          defaultValue={editSectionTarget?.name ?? ""}
+        />
+        <DialogField
+          id="edit-section-capacity"
+          name="capacity"
+          label="Capacity (optional)"
+          type="number"
+          defaultValue={
+            editSectionTarget?.capacity != null
+              ? String(editSectionTarget.capacity)
+              : ""
+          }
+        />
+      </FormDialog>
+
+      <FormDialog
+        open={archiveSectionDialog.open && archiveSectionTarget !== null}
+        onClose={() => {
+          archiveSectionDialog.closeDialog();
+          setArchiveSectionTarget(null);
+        }}
+        title="Archive section"
+        description={
+          archiveSectionTarget
+            ? `Archive section ${archiveSectionTarget.name}? It will no longer appear for new enrolments or attendance.`
+            : undefined
+        }
+        submitLabel="Archive section"
+        formAction={archiveSectionAction}
+        busy={archiveSectionPending}
+        error={archiveSectionState.error}
+        tone="danger"
+      >
+        <input type="hidden" name="school_id" value={schoolId} />
+        <input
+          type="hidden"
+          name="section_id"
+          value={archiveSectionTarget?.id ?? ""}
+        />
       </FormDialog>
     </section>
   );

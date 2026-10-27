@@ -29,6 +29,8 @@ export const STATUS_BADGE_CLASS: Record<string, string> = {
   expired: "bg-stone-200 text-stone-700",
   pending_setup: "bg-amber-100 text-amber-900",
   revoked: "bg-red-100 text-red-800",
+  draft: "bg-amber-100 text-amber-900",
+  submitted: "bg-emerald-100 text-emerald-800",
 };
 
 export function StatusBadge({ status }: { status: string }) {
@@ -65,20 +67,44 @@ export function PersonAvatar({ name }: { name: string }) {
 export function PersonCell({
   name,
   secondary,
+  href,
+  photoUrl,
 }: {
   name: string;
   secondary?: string | null;
+  href?: string;
+  photoUrl?: string | null;
 }) {
-  return (
+  const body = (
     <div className="flex items-center gap-2.5">
-      <PersonAvatar name={name} />
+      {photoUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={photoUrl}
+          alt=""
+          className="h-8 w-8 shrink-0 rounded-full object-cover"
+        />
+      ) : (
+        <PersonAvatar name={name} />
+      )}
       <div className="min-w-0">
-        <p className="truncate font-medium text-ink">{name}</p>
+        <p
+          className={`truncate font-medium ${href ? "text-teal" : "text-ink"}`}
+        >
+          {name}
+        </p>
         {secondary ? (
           <p className="truncate text-xs text-muted">{secondary}</p>
         ) : null}
       </div>
     </div>
+  );
+
+  if (!href) return body;
+  return (
+    <a href={href} className="block no-underline hover:opacity-90">
+      {body}
+    </a>
   );
 }
 

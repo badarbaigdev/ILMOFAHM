@@ -209,3 +209,78 @@ export async function withdrawSchoolEnrolmentAction(
   revalidateStudents(schoolId);
   return { error: null, success: "Enrolment withdrawn." };
 }
+
+export async function updateSchoolStudentAction(
+  _prev: SchoolStudentActionState,
+  formData: FormData,
+): Promise<SchoolStudentActionState> {
+  const schoolId = String(formData.get("school_id") ?? "").trim();
+  const studentId = String(formData.get("student_id") ?? "").trim();
+  if (!isUuid(schoolId) || !isUuid(studentId)) {
+    return { error: "Student is required.", success: null };
+  }
+
+  const validated = validateStudentInput({
+    studentNumber: String(formData.get("student_number") ?? ""),
+    firstName: String(formData.get("first_name") ?? ""),
+    lastName: String(formData.get("last_name") ?? ""),
+    dateOfBirth: String(formData.get("date_of_birth") ?? ""),
+    gender: String(formData.get("gender") ?? ""),
+  });
+  if (!validated.ok) {
+    return { error: validated.error, success: null };
+  }
+
+  const { supabase, user } = await requireUser(schoolId);
+  try {
+    await authorizeSchool(supabase, user.id, schoolId, "student.manage");
+  } catch (error) {
+    if (isSchoolAuthorizationError(error)) {
+      return { error: error.message, success: null };
+    }
+    throw error;
+  }
+
+  let photoUrl = String(formData.get("photo_url") ?? "").trim() || null;
+  const photo = formData.get("photo");
+  if (photo instanceof File && photo.size > 0) {
+    const { uploadSchoolMedia } = await import("@/features/schools/media/upload");
+    const uploaded = await uploadSchoolMedia({
+      supabase,
+      schoolId,
+      kind: "students",
+      file: photo,
+    });
+    if (!uploaded.ok) {
+      return { error: uploaded.error, success: null };
+    }
+    photoUrl = uploaded.publicUrl;
+  }
+
+  const { error } = await supabase.rpc("update_school_student", {
+    p_student_id: studentId,
+    p_student_number: validated.value.studentNumber,
+    p_first_name: validated.value.firstName,
+    p_last_name: validated.value.lastName,
+    p_date_of_birth: validated.value.dateOfBirth,
+    p_gender: validated.value.gender,
+    p_photo_url: photoUrl,
+  });
+
+  if (error) {
+    if (error.message?.includes("Not authorized")) {
+      return {
+        error: "You are not allowed to manage students.",
+        success: null,
+      };
+    }
+    return {
+      error: error.message || "Could not update student.",
+      success: null,
+    };
+  }
+
+  revalidateStudents(schoolId);
+  revalidatePath(`/school/students/${studentId}`);
+  return { error: null, success: "Student profile saved." };
+}

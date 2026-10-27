@@ -31,7 +31,8 @@ export const SCHOOL_CONSOLE_NAV: ConsoleNavGroup[] = [
   {
     label: "School",
     items: [
-      { href: "/school/settings", label: "Settings" },
+      { href: "/school/settings", label: "School profile" },
+      { href: "/school/account", label: "My account" },
       { href: "/school/setup", label: "Setup" },
     ],
   },
