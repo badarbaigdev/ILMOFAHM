@@ -201,7 +201,7 @@ export function UpdatePasswordForm() {
   return (
     <AuthFormShell
       title="Choose a password"
-      description="Set a password so you can sign in again later. You can change it anytime from this page while signed in."
+      description="Set and confirm a new password. You can use it to sign in after this step."
       action={updatePasswordAction}
       submitLabel="Save password"
       fields={[

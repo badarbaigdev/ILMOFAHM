@@ -3,7 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { buildSchoolInviteAcceptUrl } from "@/features/auth/paths";
+import {
+  buildAuthConfirmUrl,
+  buildSchoolInviteAcceptUrl,
+} from "@/features/auth/paths";
 import { ensureProfileForUser } from "@/features/auth/ensure-profile";
 import { AuthorizationError } from "@/features/platform/authorization/errors";
 import { authorizePlatform } from "@/features/platform/operator/authorize-platform";
@@ -349,9 +352,9 @@ export async function platformResetMemberPasswordAction(
   const link = await admin.auth.admin.generateLink({
     type: "recovery",
     email: authUser.user.email,
-    options: { redirectTo: `${appUrl}/auth/update-password` },
   });
-  if (link.error || !link.data.properties?.action_link) {
+  const tokenHash = link.data.properties?.hashed_token;
+  if (link.error || !tokenHash) {
     return {
       error: link.error?.message || "Could not create a password reset link.",
       success: null,
@@ -362,7 +365,12 @@ export async function platformResetMemberPasswordAction(
   return {
     error: null,
     success: `Password reset link created for ${authUser.user.email}. Share it securely — it is shown once.`,
-    recoveryUrl: link.data.properties.action_link,
+    recoveryUrl: buildAuthConfirmUrl(
+      appUrl,
+      tokenHash,
+      "recovery",
+      "/auth/update-password",
+    ),
   };
 }
 

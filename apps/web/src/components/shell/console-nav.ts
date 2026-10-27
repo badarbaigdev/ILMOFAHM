@@ -64,6 +64,9 @@ export const PLATFORM_CONSOLE_NAV: ConsoleNavGroup[] = [
   },
   {
     label: "Access",
-    items: [{ href: "/platform/operators", label: "Operators" }],
+    items: [
+      { href: "/platform/password-recovery", label: "Password recovery" },
+      { href: "/platform/operators", label: "Operators" },
+    ],
   },
 ];

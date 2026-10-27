@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { requirePlatformOperatorPage } from "@/features/platform/operator/require-operator";
+import { listPasswordRecoveryRequests } from "@/features/platform/password-recovery/queries";
+import { PasswordRecoveryPanel } from "@/features/platform/password-recovery/recovery-panel";
 import { PlatformSchoolAdminPanel } from "@/features/platform/schools/school-admin-panel";
 import { getActiveSchoolSupportSession } from "@/features/platform/schools/support";
 import {
@@ -30,11 +32,15 @@ export default async function PlatformSchoolDetailPage({ params }: PageProps) {
   let members;
   let invitations;
   let activeSupport = null;
+  let recoveryRequests: Awaited<
+    ReturnType<typeof listPasswordRecoveryRequests>
+  > = [];
   try {
-    [members, invitations, activeSupport] = await Promise.all([
+    [members, invitations, activeSupport, recoveryRequests] = await Promise.all([
       listSchoolMembers(supabase, schoolId),
       listPendingSchoolInvitations(supabase, schoolId),
       getActiveSchoolSupportSession(supabase, schoolId, user.id),
+      listPasswordRecoveryRequests(supabase, { schoolId }).catch(() => []),
     ]);
   } catch {
     return (
@@ -118,6 +124,20 @@ export default async function PlatformSchoolDetailPage({ params }: PageProps) {
           activeSupport={activeSupport}
         />
       </div>
+
+      {recoveryRequests.length > 0 ? (
+        <section className="mt-10">
+          <h2 className="text-sm font-semibold tracking-wide text-ink uppercase">
+            Password recovery requests
+          </h2>
+          <p className="mt-1 text-sm text-muted">
+            Pending and recent recovery requests for this school.
+          </p>
+          <div className="mt-4">
+            <PasswordRecoveryPanel requests={recoveryRequests} />
+          </div>
+        </section>
+      ) : null}
     </main>
   );
 }
