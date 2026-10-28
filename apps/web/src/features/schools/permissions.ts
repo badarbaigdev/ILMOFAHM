@@ -24,6 +24,8 @@ export const SCHOOL_PERMISSIONS = [
   "teacher.manage",
   "fee.read",
   "fee.manage",
+  "exam.read",
+  "exam.manage",
 ] as const;
 
 export type SchoolPermission = (typeof SCHOOL_PERMISSIONS)[number];
@@ -46,6 +48,7 @@ const ROLE_PERMISSIONS: Record<SchoolRole, readonly SchoolPermission[]> = {
     "attendance.read",
     "teacher.read",
     "fee.read",
+    "exam.read",
   ],
   teacher: [
     "school.read",
@@ -56,6 +59,8 @@ const ROLE_PERMISSIONS: Record<SchoolRole, readonly SchoolPermission[]> = {
     "attendance.manage",
     "teacher.read",
     "fee.read",
+    "exam.read",
+    "exam.manage",
   ],
   accountant: [
     "school.read",
@@ -66,6 +71,7 @@ const ROLE_PERMISSIONS: Record<SchoolRole, readonly SchoolPermission[]> = {
     "teacher.read",
     "fee.read",
     "fee.manage",
+    "exam.read",
   ],
 };
 

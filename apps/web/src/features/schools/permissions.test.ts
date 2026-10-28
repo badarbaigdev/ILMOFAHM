@@ -86,6 +86,17 @@ describe("school permission matrix", () => {
     assert.equal(schoolRoleHasPermission("staff", "fee.read"), true);
     assert.equal(schoolRoleHasPermission("staff", "fee.manage"), false);
   });
+
+  it("allows teachers to manage exam marks and staff to read only", () => {
+    assert.equal(schoolRoleHasPermission("owner", "exam.manage"), true);
+    assert.equal(schoolRoleHasPermission("admin", "exam.manage"), true);
+    assert.equal(schoolRoleHasPermission("teacher", "exam.manage"), true);
+    assert.equal(schoolRoleHasPermission("teacher", "exam.read"), true);
+    assert.equal(schoolRoleHasPermission("staff", "exam.read"), true);
+    assert.equal(schoolRoleHasPermission("staff", "exam.manage"), false);
+    assert.equal(schoolRoleHasPermission("accountant", "exam.read"), true);
+    assert.equal(schoolRoleHasPermission("accountant", "exam.manage"), false);
+  });
 });
 
 describe("school invite roles", () => {
