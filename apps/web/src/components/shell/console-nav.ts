@@ -28,6 +28,7 @@ export const SCHOOL_CONSOLE_NAV: ConsoleNavGroup[] = [
       { href: "/school/attendance", label: "Attendance" },
       { href: "/school/exams", label: "Exams" },
       { href: "/school/fees", label: "Fees" },
+      { href: "/school/inventory", label: "Inventory" },
     ],
   },
   {
