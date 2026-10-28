@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import {
+  buildAuthConfirmUrl,
   buildSchoolInviteAcceptUrl,
   defaultPostAuthPath,
   safeAuthNextPath,
@@ -55,6 +56,20 @@ describe("buildSchoolInviteAcceptUrl", () => {
     assert.equal(
       buildSchoolInviteAcceptUrl("http://localhost:3000", "tokensecret"),
       "http://localhost:3000/auth/accept-school-invite?token=tokensecret",
+    );
+  });
+});
+
+describe("buildAuthConfirmUrl", () => {
+  it("builds a confirm URL with token_hash, type, and safe next", () => {
+    assert.equal(
+      buildAuthConfirmUrl(
+        "http://localhost:3000",
+        "abc123hash",
+        "recovery",
+        "/auth/update-password",
+      ),
+      "http://localhost:3000/auth/confirm?token_hash=abc123hash&type=recovery&next=%2Fauth%2Fupdate-password",
     );
   });
 });

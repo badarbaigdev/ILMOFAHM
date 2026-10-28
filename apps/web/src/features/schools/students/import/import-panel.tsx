@@ -87,14 +87,14 @@ export function SchoolStudentImportPanel({
   }
 
   return (
-    <section aria-labelledby="student-import-heading" className="mt-12">
+    <section aria-labelledby="student-import-heading">
       <h2
         id="student-import-heading"
-        className="font-display text-2xl tracking-tight text-ink"
+        className="text-sm font-semibold tracking-wide text-ink uppercase"
       >
         Bulk import
       </h2>
-      <p className="mt-2 max-w-2xl text-sm text-muted">
+      <p className="mt-1 max-w-2xl text-sm text-muted">
         Upload a CSV (Excel: File → Save As → CSV UTF-8). Dry-run validates
         rows and flags duplicates; commit creates students and optional
         enrolments when year/grade/section names match this school.
@@ -262,7 +262,7 @@ export function SchoolStudentImportPanel({
             {batches.map((batch) => (
               <li key={batch.id} className="py-2">
                 <a
-                  href={`/school/students?school=${schoolId}&import=${batch.id}`}
+                  href={`/school/students?school=${schoolId}&section=import&import=${batch.id}`}
                   className="font-medium text-ink no-underline hover:underline"
                 >
                   {batch.filename}

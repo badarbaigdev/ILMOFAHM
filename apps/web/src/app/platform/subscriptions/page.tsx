@@ -1,7 +1,9 @@
-import Link from "next/link";
-
+import { SubTabs } from "@/components/ui/sub-tabs";
 import { requirePlatformOperatorPage } from "@/features/platform/operator/require-operator";
-import { AssignSubscriptionForm } from "@/features/platform/subscriptions/forms";
+import {
+  AssignSubscriptionButton,
+  PlatformSubscriptionsTable,
+} from "@/features/platform/ui/platform-lists";
 import {
   listSchoolSubscriptions,
   listSubscriptionPlans,
@@ -12,23 +14,42 @@ type PageProps = {
   searchParams: Promise<{ status?: string }>;
 };
 
+const FILTERS = [
+  "all",
+  "trial",
+  "active",
+  "past_due",
+  "grace",
+  "suspended",
+  "cancelled",
+  "expired",
+] as const;
+
 export default async function PlatformSubscriptionsPage({
   searchParams,
 }: PageProps) {
   const params = await searchParams;
-  const statusFilter = params.status?.trim() || "all";
+  const statusFilter = (params.status?.trim() || "all") as
+    | (typeof FILTERS)[number]
+    | string;
+  const activeFilter = FILTERS.includes(
+    statusFilter as (typeof FILTERS)[number],
+  )
+    ? statusFilter
+    : "all";
+
   const { supabase } = await requirePlatformOperatorPage(
     "platform.subscriptions.read",
   );
 
-  let subscriptions;
+  let allSubscriptions;
   let plans;
   let schools;
   try {
-    [subscriptions, plans, schools] = await Promise.all([
+    [allSubscriptions, plans, schools] = await Promise.all([
       listSchoolSubscriptions(supabase, {
         currentOnly: true,
-        status: statusFilter,
+        status: "all",
       }),
       listSubscriptionPlans(supabase),
       listPlatformSchools(supabase),
@@ -38,9 +59,9 @@ export default async function PlatformSubscriptionsPage({
       <main
         id="main-content"
         tabIndex={-1}
-        className="mx-auto w-full max-w-5xl px-6 py-12 outline-none sm:px-10 sm:py-16"
+        className="w-full max-w-none px-3 py-6 outline-none sm:px-4 lg:px-5"
       >
-        <h1 className="font-display text-4xl tracking-tight text-ink">
+        <h1 className="text-2xl font-semibold tracking-tight text-ink">
           Subscriptions
         </h1>
         <p role="alert" className="mt-4 text-sm text-red-700">
@@ -50,110 +71,62 @@ export default async function PlatformSubscriptionsPage({
     );
   }
 
-  const filters = [
-    "all",
-    "trial",
-    "active",
-    "past_due",
-    "grace",
-    "suspended",
-    "cancelled",
-    "expired",
-  ] as const;
+  const counts = Object.fromEntries(
+    FILTERS.map((status) => [
+      status,
+      status === "all"
+        ? allSubscriptions.length
+        : allSubscriptions.filter((s) => s.status === status).length,
+    ]),
+  ) as Record<string, number>;
+
+  const subscriptions =
+    activeFilter === "all"
+      ? allSubscriptions
+      : allSubscriptions.filter((s) => s.status === activeFilter);
 
   return (
     <main
       id="main-content"
       tabIndex={-1}
-      className="mx-auto w-full max-w-5xl px-6 py-12 outline-none sm:px-10 sm:py-16"
+      className="w-full max-w-none px-3 py-6 outline-none sm:px-4 lg:px-5"
     >
       <p className="text-[0.65rem] font-semibold tracking-[0.2em] text-teal uppercase">
         Superadmin
       </p>
-      <h1 className="mt-2 font-display text-4xl tracking-tight text-ink">
-        Subscriptions
-      </h1>
-      <p className="mt-3 max-w-2xl text-muted">
-        Manual SaaS subscription management for school tenants. Payments are
-        recorded by operators — there is no payment gateway in this phase.
-      </p>
-
-      <nav aria-label="Subscription status filters" className="mt-8">
-        <ul className="flex flex-wrap gap-3 text-sm">
-          {filters.map((status) => {
-            const href =
-              status === "all"
-                ? "/platform/subscriptions"
-                : `/platform/subscriptions?status=${status}`;
-            const active = statusFilter === status;
-            return (
-              <li key={status}>
-                <Link
-                  href={href}
-                  aria-current={active ? "page" : undefined}
-                  className={
-                    active
-                      ? "font-medium text-ink underline"
-                      : "text-muted underline-offset-2 hover:text-ink hover:underline"
-                  }
-                >
-                  {status.replaceAll("_", " ")}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      </nav>
-
-      {subscriptions.length === 0 ? (
-        <p className="mt-10 text-sm text-muted">
-          No current subscriptions match this filter. Assign one below, or
-          provision a school to create a trial automatically.
-        </p>
-      ) : (
-        <ul className="mt-10 divide-y divide-line/70 border-y border-line/70">
-          {subscriptions.map((sub) => (
-            <li key={sub.id} className="py-5">
-              <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <h2 className="font-display text-xl text-ink">
-                  <Link
-                    href={`/platform/subscriptions/${sub.id}`}
-                    className="text-ink no-underline hover:underline"
-                  >
-                    {sub.schoolName}
-                  </Link>
-                </h2>
-                <span className="text-xs tracking-wide text-muted uppercase">
-                  {sub.status.replaceAll("_", " ")}
-                </span>
-              </div>
-              <p className="mt-1 text-sm text-muted">
-                {sub.planName} · {sub.billingInterval}
-                {sub.billingContactEmail
-                  ? ` · ${sub.billingContactEmail}`
-                  : ""}
-              </p>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      <section aria-labelledby="assign-heading" className="mt-14">
-        <h2
-          id="assign-heading"
-          className="text-sm font-semibold tracking-wide text-ink uppercase"
-        >
-          Assign or replace subscription
-        </h2>
-        <p className="mt-2 max-w-2xl text-sm text-muted">
-          Creates a new current subscription row and marks any previous current
-          row as historical.
-        </p>
-        <AssignSubscriptionForm
+      <div className="mt-2 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-ink">
+            Subscriptions
+          </h1>
+          <p className="mt-2 max-w-2xl text-sm text-muted">
+            Manual SaaS subscription management for school tenants. Payments are
+            recorded by operators — there is no payment gateway in this phase.
+          </p>
+        </div>
+        <AssignSubscriptionButton
           schools={schools.map((s) => ({ id: s.id, name: s.name }))}
           plans={plans}
         />
-      </section>
+      </div>
+
+      <SubTabs
+        label="Subscription status"
+        activeId={activeFilter}
+        items={FILTERS.map((status) => ({
+          id: status,
+          label: status.replaceAll("_", " "),
+          count: counts[status] ?? 0,
+          href:
+            status === "all"
+              ? "/platform/subscriptions"
+              : `/platform/subscriptions?status=${status}`,
+        }))}
+      />
+
+      <div className="mt-6">
+        <PlatformSubscriptionsTable subscriptions={subscriptions} />
+      </div>
     </main>
   );
 }

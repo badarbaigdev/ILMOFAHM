@@ -6,6 +6,7 @@ import {
   canSchool,
   isSchoolAuthorizationError,
 } from "@/features/schools/authorization";
+import { schoolBrandLogoUrl, schoolBrandName } from "@/features/schools/branding";
 import { loadSchoolContext } from "@/features/schools/context";
 import { SchoolFeesPanel } from "@/features/schools/fees/fees-panel";
 import {
@@ -51,7 +52,7 @@ export default async function SchoolFeesPage({ searchParams }: PageProps) {
       <main
         id="main-content"
         tabIndex={-1}
-        className="mx-auto w-full max-w-6xl px-4 py-8 outline-none sm:px-6 lg:px-8"
+        className="w-full max-w-none px-3 py-6 outline-none sm:px-4 lg:px-5"
       >
         <h1 className="text-2xl font-semibold text-ink">Fees</h1>
         <p role="alert" className="mt-4 text-sm text-red-700">
@@ -66,7 +67,7 @@ export default async function SchoolFeesPage({ searchParams }: PageProps) {
       <main
         id="main-content"
         tabIndex={-1}
-        className="mx-auto w-full max-w-6xl px-4 py-8 outline-none sm:px-6 lg:px-8"
+        className="w-full max-w-none px-3 py-6 outline-none sm:px-4 lg:px-5"
       >
         <h1 className="text-2xl font-semibold text-ink">Fees</h1>
         <p className="mt-4 text-sm text-muted">
@@ -86,7 +87,7 @@ export default async function SchoolFeesPage({ searchParams }: PageProps) {
         <main
           id="main-content"
           tabIndex={-1}
-          className="mx-auto w-full max-w-6xl px-4 py-8 outline-none sm:px-6 lg:px-8"
+          className="w-full max-w-none px-3 py-6 outline-none sm:px-4 lg:px-5"
         >
           <h1 className="text-2xl font-semibold text-ink">Fees</h1>
           <p role="alert" className="mt-4 text-sm text-red-700">
@@ -114,7 +115,7 @@ export default async function SchoolFeesPage({ searchParams }: PageProps) {
       <main
         id="main-content"
         tabIndex={-1}
-        className="mx-auto w-full max-w-6xl px-4 py-8 outline-none sm:px-6 lg:px-8"
+        className="w-full max-w-none px-3 py-6 outline-none sm:px-4 lg:px-5"
       >
         <h1 className="text-2xl font-semibold text-ink">Fees</h1>
         <p role="alert" className="mt-4 text-sm text-red-700">
@@ -131,31 +132,39 @@ export default async function SchoolFeesPage({ searchParams }: PageProps) {
     "fee.manage",
   );
   const summary = summarizeFeeCharges(charges);
+  const brandName = schoolBrandName(active.school);
+  const logoUrl = schoolBrandLogoUrl(active.school);
+  const contact = [active.school.phone, active.school.email]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
     <main
       id="main-content"
       tabIndex={-1}
-      className="mx-auto w-full max-w-6xl px-4 py-8 outline-none sm:px-6 lg:px-8"
+      className="w-full max-w-none px-3 py-6 outline-none sm:px-4 lg:px-5"
     >
       <p className="text-sm text-muted">
         <Link
           href={`/school?school=${active.school.id}`}
           className="text-ink underline-offset-2 hover:underline"
         >
-          ← {active.school.name}
+          ← {brandName}
         </Link>
       </p>
       <h1 className="mt-4 text-2xl font-semibold tracking-tight text-ink">
         Fees collection
       </h1>
       <p className="mt-1 text-sm text-muted">
-        Fee heads, student charges, and manual receipts for {active.school.name}.
-        Platform SaaS billing stays separate.
+        Fee bills and payment receipts for {brandName}. Platform SaaS billing
+        stays separate.
       </p>
 
       <SchoolFeesPanel
         schoolId={active.school.id}
+        schoolName={brandName}
+        schoolLogoUrl={logoUrl}
+        schoolContact={contact || null}
         heads={heads}
         charges={charges}
         payments={payments}

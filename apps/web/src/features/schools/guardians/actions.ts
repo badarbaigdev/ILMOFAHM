@@ -203,3 +203,76 @@ export async function unlinkSchoolStudentGuardianAction(
   revalidateGuardians(schoolId);
   return { error: null, success: "Guardian link revoked." };
 }
+
+export async function updateSchoolGuardianAction(
+  _prev: SchoolGuardianActionState,
+  formData: FormData,
+): Promise<SchoolGuardianActionState> {
+  const schoolId = String(formData.get("school_id") ?? "").trim();
+  const guardianId = String(formData.get("guardian_id") ?? "").trim();
+  if (!isUuid(schoolId) || !isUuid(guardianId)) {
+    return { error: "Guardian is required.", success: null };
+  }
+
+  const validated = validateGuardianInput({
+    firstName: String(formData.get("first_name") ?? ""),
+    lastName: String(formData.get("last_name") ?? ""),
+    email: String(formData.get("email") ?? ""),
+    phone: String(formData.get("phone") ?? ""),
+  });
+  if (!validated.ok) {
+    return { error: validated.error, success: null };
+  }
+
+  const { supabase, user } = await requireUser(schoolId);
+  try {
+    await authorizeSchool(supabase, user.id, schoolId, "student.manage");
+  } catch (error) {
+    if (isSchoolAuthorizationError(error)) {
+      return { error: error.message, success: null };
+    }
+    throw error;
+  }
+
+  let photoUrl = String(formData.get("photo_url") ?? "").trim() || null;
+  const photo = formData.get("photo");
+  if (photo instanceof File && photo.size > 0) {
+    const { uploadSchoolMedia } = await import("@/features/schools/media/upload");
+    const uploaded = await uploadSchoolMedia({
+      supabase,
+      schoolId,
+      kind: "guardians",
+      file: photo,
+    });
+    if (!uploaded.ok) {
+      return { error: uploaded.error, success: null };
+    }
+    photoUrl = uploaded.publicUrl;
+  }
+
+  const { error } = await supabase.rpc("update_school_guardian", {
+    p_guardian_id: guardianId,
+    p_first_name: validated.value.firstName,
+    p_last_name: validated.value.lastName,
+    p_email: validated.value.email,
+    p_phone: validated.value.phone,
+    p_photo_url: photoUrl,
+  });
+
+  if (error) {
+    if (error.message?.includes("Not authorized")) {
+      return {
+        error: "You are not allowed to manage guardians.",
+        success: null,
+      };
+    }
+    return {
+      error: error.message || "Could not update guardian.",
+      success: null,
+    };
+  }
+
+  revalidateGuardians(schoolId);
+  revalidatePath(`/school/guardians/${guardianId}`);
+  return { error: null, success: "Guardian profile saved." };
+}

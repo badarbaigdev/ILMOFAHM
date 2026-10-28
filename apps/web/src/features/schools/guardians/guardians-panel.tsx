@@ -153,6 +153,8 @@ export function SchoolGuardiansPanel({
                 <PersonCell
                   name={`${row.firstName} ${row.lastName}`}
                   secondary={row.email}
+                  href={`/school/guardians/${row.id}?school=${schoolId}`}
+                  photoUrl={row.photoUrl}
                 />
               ),
             },
@@ -210,10 +212,13 @@ export function SchoolGuardiansPanel({
                 cell: (row) => {
                   const label = studentLabel.get(row.studentId) ?? "Student";
                   const [number, ...rest] = label.split(" · ");
+                  const student = students.find((s) => s.id === row.studentId);
                   return (
                     <PersonCell
                       name={rest.join(" · ") || label}
                       secondary={number !== label ? number : null}
+                      href={`/school/students/${row.studentId}?school=${schoolId}`}
+                      photoUrl={student?.photoUrl}
                     />
                   );
                 },
@@ -221,7 +226,20 @@ export function SchoolGuardiansPanel({
               {
                 id: "guardian",
                 header: "Guardian",
-                cell: (row) => guardianLabel.get(row.guardianId) ?? "Guardian",
+                cell: (row) => {
+                  const guardian = guardians.find((g) => g.id === row.guardianId);
+                  return (
+                    <PersonCell
+                      name={
+                        guardian
+                          ? `${guardian.firstName} ${guardian.lastName}`
+                          : (guardianLabel.get(row.guardianId) ?? "Guardian")
+                      }
+                      href={`/school/guardians/${row.guardianId}?school=${schoolId}`}
+                      photoUrl={guardian?.photoUrl}
+                    />
+                  );
+                },
               },
               {
                 id: "relationship",

@@ -5,7 +5,7 @@ import { requirePlatformOperatorPage } from "@/features/platform/operator/requir
 import {
   RecordPaymentForm,
   SetSubscriptionStatusForm,
-  VoidPaymentForm,
+  SubscriptionPaymentsTable,
 } from "@/features/platform/subscriptions/forms";
 import {
   getSchoolSubscription,
@@ -37,7 +37,7 @@ export default async function PlatformSubscriptionDetailPage({
       <main
         id="main-content"
         tabIndex={-1}
-        className="mx-auto w-full max-w-3xl px-6 py-12 outline-none sm:px-10 sm:py-16"
+        className="w-full max-w-none px-3 py-6 outline-none sm:px-4 lg:px-5"
       >
         <h1 className="font-display text-3xl tracking-tight text-ink">
           Subscription
@@ -53,7 +53,7 @@ export default async function PlatformSubscriptionDetailPage({
     <main
       id="main-content"
       tabIndex={-1}
-      className="mx-auto w-full max-w-3xl px-6 py-12 outline-none sm:px-10 sm:py-16"
+      className="w-full max-w-none px-3 py-6 outline-none sm:px-4 lg:px-5"
     >
       <p className="text-sm">
         <Link
@@ -112,62 +112,43 @@ export default async function PlatformSubscriptionDetailPage({
         ) : null}
       </dl>
 
-      <section aria-labelledby="status-heading" className="mt-12">
-        <h2
-          id="status-heading"
-          className="text-sm font-semibold tracking-wide text-ink uppercase"
-        >
-          Update status
-        </h2>
-        <SetSubscriptionStatusForm
-          subscriptionId={subscription.id}
-          currentStatus={subscription.status}
-        />
+      <section aria-labelledby="status-heading" className="mt-10">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2
+            id="status-heading"
+            className="text-sm font-semibold tracking-wide text-ink uppercase"
+          >
+            Status
+          </h2>
+          <SetSubscriptionStatusForm
+            subscriptionId={subscription.id}
+            currentStatus={subscription.status}
+          />
+        </div>
       </section>
 
-      <section aria-labelledby="payments-heading" className="mt-12">
-        <h2
-          id="payments-heading"
-          className="text-sm font-semibold tracking-wide text-ink uppercase"
-        >
-          Manual payments
-        </h2>
-        <p className="mt-2 text-sm text-muted">
-          Record bank/cash/cheque receipts. Void with a reason if entered in
-          error. No online gateway.
-        </p>
-
-        {payments.length === 0 ? (
-          <p className="mt-4 text-sm text-muted">No payments recorded yet.</p>
-        ) : (
-          <ul className="mt-4 divide-y divide-line/70 border-y border-line/70">
-            {payments.map((payment) => (
-              <li key={payment.id} className="py-4 text-sm">
-                <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <p className="font-medium text-ink">
-                    {payment.amount.toFixed(2)} {payment.currencyCode}
-                  </p>
-                  <span className="text-xs tracking-wide text-muted uppercase">
-                    {payment.status}
-                  </span>
-                </div>
-                <p className="mt-1 text-muted">
-                  {payment.method.replaceAll("_", " ")}
-                  {payment.reference ? ` · ${payment.reference}` : ""}
-                  {` · ${new Date(payment.paidAt).toLocaleDateString()}`}
-                </p>
-                <VoidPaymentForm
-                  payment={payment}
-                  subscriptionId={subscription.id}
-                />
-              </li>
-            ))}
-          </ul>
-        )}
-
-        <div className="mt-8">
-          <h3 className="text-sm font-medium text-ink">Record payment</h3>
+      <section aria-labelledby="payments-heading" className="mt-10">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2
+              id="payments-heading"
+              className="text-sm font-semibold tracking-wide text-ink uppercase"
+            >
+              Manual payments
+            </h2>
+            <p className="mt-2 text-sm text-muted">
+              Record bank/cash/cheque receipts. Void with a reason if entered in
+              error. No online gateway.
+            </p>
+          </div>
           <RecordPaymentForm subscriptionId={subscription.id} />
+        </div>
+
+        <div className="mt-6">
+          <SubscriptionPaymentsTable
+            payments={payments}
+            subscriptionId={subscription.id}
+          />
         </div>
       </section>
     </main>

@@ -101,16 +101,18 @@ export function SchoolTeachersPanel({
                 <span className="font-medium text-teal">{row.staffNumber}</span>
               ),
             },
-            {
-              id: "name",
-              header: "Name",
-              cell: (row) => (
-                <PersonCell
-                  name={`${row.firstName} ${row.lastName}`}
-                  secondary={row.email}
-                />
-              ),
-            },
+              {
+                id: "name",
+                header: "Name",
+                cell: (row) => (
+                  <PersonCell
+                    name={`${row.firstName} ${row.lastName}`}
+                    secondary={row.email}
+                    href={`/school/teachers/${row.id}?school=${schoolId}`}
+                    photoUrl={row.photoUrl}
+                  />
+                ),
+              },
             {
               id: "subject",
               header: "Subject",

@@ -86,7 +86,36 @@ describe("school permission matrix", () => {
     assert.equal(schoolRoleHasPermission("staff", "fee.read"), true);
     assert.equal(schoolRoleHasPermission("staff", "fee.manage"), false);
   });
+
+  it("allows teachers to manage exam marks and staff to read only", () => {
+    assert.equal(schoolRoleHasPermission("owner", "exam.manage"), true);
+    assert.equal(schoolRoleHasPermission("admin", "exam.manage"), true);
+    assert.equal(schoolRoleHasPermission("teacher", "exam.manage"), true);
+    assert.equal(schoolRoleHasPermission("teacher", "exam.read"), true);
+    assert.equal(schoolRoleHasPermission("staff", "exam.read"), true);
+    assert.equal(schoolRoleHasPermission("staff", "exam.manage"), false);
+    assert.equal(schoolRoleHasPermission("accountant", "exam.read"), true);
+    assert.equal(schoolRoleHasPermission("accountant", "exam.manage"), false);
+  });
+
+  it("allows staff to manage inventory and teachers to read only", () => {
+    assert.equal(schoolRoleHasPermission("owner", "inventory.manage"), true);
+    assert.equal(schoolRoleHasPermission("admin", "inventory.manage"), true);
+    assert.equal(schoolRoleHasPermission("staff", "inventory.manage"), true);
+    assert.equal(schoolRoleHasPermission("staff", "inventory.read"), true);
+    assert.equal(schoolRoleHasPermission("teacher", "inventory.read"), true);
+    assert.equal(schoolRoleHasPermission("teacher", "inventory.manage"), false);
+    assert.equal(
+      schoolRoleHasPermission("accountant", "inventory.read"),
+      true,
+    );
+    assert.equal(
+      schoolRoleHasPermission("accountant", "inventory.manage"),
+      false,
+    );
+  });
 });
+
 
 describe("school invite roles", () => {
   it("allows staff roles and rejects owner", () => {

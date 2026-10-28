@@ -104,3 +104,58 @@ export async function listSchoolAttendanceMarks(
     note: row.note,
   }));
 }
+
+export async function listSchoolAttendanceSessionsForDate(
+  supabase: SupabaseClient,
+  schoolId: string,
+  attendanceDate: string,
+): Promise<SchoolAttendanceSessionRow[]> {
+  const { data, error } = await supabase
+    .from("school_attendance_sessions")
+    .select(
+      "id, school_id, section_id, attendance_date, status, submitted_at",
+    )
+    .eq("school_id", schoolId)
+    .eq("attendance_date", attendanceDate)
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    throw new Error("Could not load attendance sessions for date.");
+  }
+
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    schoolId: row.school_id,
+    sectionId: row.section_id,
+    attendanceDate: row.attendance_date,
+    status: row.status,
+    submittedAt: row.submitted_at,
+  }));
+}
+
+export async function listSchoolAttendanceMarksForDate(
+  supabase: SupabaseClient,
+  schoolId: string,
+  attendanceDate: string,
+): Promise<SchoolAttendanceMarkRow[]> {
+  const { data, error } = await supabase
+    .from("school_attendance_marks")
+    .select(
+      "id, school_id, session_id, student_id, status, note, school_attendance_sessions!inner(attendance_date)",
+    )
+    .eq("school_id", schoolId)
+    .eq("school_attendance_sessions.attendance_date", attendanceDate);
+
+  if (error) {
+    throw new Error("Could not load attendance marks for date.");
+  }
+
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    schoolId: row.school_id,
+    sessionId: row.session_id,
+    studentId: row.student_id,
+    status: row.status,
+    note: row.note,
+  }));
+}

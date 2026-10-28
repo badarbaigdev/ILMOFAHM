@@ -6,7 +6,13 @@ export const metadata = {
   title: "Attendance · UI preview",
 };
 
-const STATUSES = ["present", "absent", "late", "excused", "leave"] as const;
+const STATUSES = [
+  "present",
+  "absent",
+  "late",
+  "excused",
+  "half_day",
+] as const;
 
 export default function AttendanceUiPreviewPage() {
   assertUiPreviewAllowed();

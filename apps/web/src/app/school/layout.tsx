@@ -1,6 +1,9 @@
 import { ConsoleShell } from "@/components/shell/ConsoleShell";
 import { SCHOOL_CONSOLE_NAV } from "@/components/shell/console-nav";
 import { signOutAction } from "@/features/auth/actions";
+import { schoolBrandLogoUrl, schoolBrandName } from "@/features/schools/branding";
+import { SchoolSupportBanner } from "@/features/platform/schools/support-banner";
+import { listOpenSupportSessionsForOperator } from "@/features/platform/schools/support";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export default async function SchoolLayout({
@@ -10,6 +13,14 @@ export default async function SchoolLayout({
 }) {
   let userLabel = "School user";
   let userRole = "Member";
+  let brandLabel = "School console";
+  let brandLogoUrl: string | null = null;
+  let supportBanner: {
+    schoolId: string;
+    schoolName: string;
+    expiresAt: string;
+    reason: string;
+  } | null = null;
 
   try {
     const supabase = await createServerSupabaseClient();
@@ -29,14 +40,75 @@ export default async function SchoolLayout({
 
       const { data: membership } = await supabase
         .from("school_memberships")
-        .select("role")
+        .select(
+          "role, schools(name, brand_display_name, brand_logo_url)",
+        )
         .eq("user_id", user.id)
         .eq("status", "active")
         .order("created_at", { ascending: true })
         .limit(1)
         .maybeSingle();
+
       if (membership?.role) {
         userRole = String(membership.role);
+      }
+
+      const schoolJoin = membership?.schools;
+      const schoolRow = Array.isArray(schoolJoin)
+        ? schoolJoin[0]
+        : schoolJoin;
+      if (schoolRow && typeof schoolRow === "object") {
+        const row = schoolRow as {
+          name?: string;
+          brand_display_name?: string | null;
+          brand_logo_url?: string | null;
+        };
+        brandLabel = schoolBrandName({
+          name: String(row.name ?? "School"),
+          brandDisplayName:
+            row.brand_display_name == null
+              ? null
+              : String(row.brand_display_name),
+        });
+        brandLogoUrl = schoolBrandLogoUrl({
+          brandLogoUrl:
+            row.brand_logo_url == null ? null : String(row.brand_logo_url),
+        });
+      }
+
+      const sessions = await listOpenSupportSessionsForOperator(
+        supabase,
+        user.id,
+      ).catch(() => []);
+      const open = sessions[0];
+      if (open) {
+        const { data: school } = await supabase
+          .from("schools")
+          .select("name, brand_display_name, brand_logo_url")
+          .eq("id", open.schoolId)
+          .maybeSingle();
+        supportBanner = {
+          schoolId: open.schoolId,
+          schoolName: school?.name ? String(school.name) : "School",
+          expiresAt: open.expiresAt,
+          reason: open.reason,
+        };
+        userRole = "Platform support";
+        if (school) {
+          brandLabel = schoolBrandName({
+            name: String(school.name),
+            brandDisplayName:
+              school.brand_display_name == null
+                ? null
+                : String(school.brand_display_name),
+          });
+          brandLogoUrl = schoolBrandLogoUrl({
+            brandLogoUrl:
+              school.brand_logo_url == null
+                ? null
+                : String(school.brand_logo_url),
+          });
+        }
       }
     }
   } catch {
@@ -50,7 +122,18 @@ export default async function SchoolLayout({
       userLabel={userLabel}
       userRole={userRole}
       signOutAction={signOutAction}
+      brandLabel={brandLabel}
+      brandLogoUrl={brandLogoUrl}
+      accountHref="/school/account"
     >
+      {supportBanner ? (
+        <SchoolSupportBanner
+          schoolId={supportBanner.schoolId}
+          schoolName={supportBanner.schoolName}
+          expiresAt={supportBanner.expiresAt}
+          reason={supportBanner.reason}
+        />
+      ) : null}
       {children}
     </ConsoleShell>
   );

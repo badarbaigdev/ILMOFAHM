@@ -33,6 +33,8 @@ import {
 
 const initial: SchoolStudentActionState = { error: null, success: null };
 
+export type StudentsPanelSection = "directory" | "enrolments";
+
 type Props = {
   schoolId: string;
   students: SchoolStudentRow[];
@@ -41,6 +43,7 @@ type Props = {
   grades: SchoolGradeRow[];
   sections: SchoolSectionRow[];
   canManage: boolean;
+  activeSection: StudentsPanelSection;
 };
 
 type StudentListRow = SchoolStudentRow & {
@@ -56,6 +59,7 @@ export function SchoolStudentsPanel({
   grades,
   sections,
   canManage,
+  activeSection,
 }: Props) {
   const [studentState, studentAction, studentPending] = useActionState(
     createSchoolStudentAction,
@@ -127,133 +131,161 @@ export function SchoolStudentsPanel({
 
   return (
     <div>
-      <section aria-labelledby="students-list-heading">
-        <div className="mb-4 flex flex-wrap items-center justify-end gap-2">
-          <h2 id="students-list-heading" className="sr-only">
-            Student list
-          </h2>
-          {canManage ? (
-            <>
+      {activeSection === "directory" ? (
+        <section aria-labelledby="students-list-heading">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h2
+                id="students-list-heading"
+                className="text-sm font-semibold tracking-wide text-ink uppercase"
+              >
+                Directory
+              </h2>
+              <p className="mt-1 text-sm text-muted">
+                Search and manage student records.
+              </p>
+            </div>
+            {canManage ? (
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={enrolDialog.openDialog}
+                  className="rounded-md border border-line bg-paper-elevated px-4 py-2 text-sm font-medium text-ink"
+                >
+                  Enrol student
+                </button>
+                <button
+                  type="button"
+                  onClick={createDialog.openDialog}
+                  className="rounded-md bg-teal px-4 py-2 text-sm font-medium text-white"
+                >
+                  + Add student
+                </button>
+              </div>
+            ) : null}
+          </div>
+
+          <SchoolDataTable
+            rows={listRows}
+            rowKey={(row) => row.id}
+            searchPlaceholder="Search students"
+            searchText={(row) =>
+              [
+                row.studentNumber,
+                row.firstName,
+                row.lastName,
+                row.classLabel,
+                row.gender ?? "",
+                row.status,
+              ].join(" ")
+            }
+            filterOptions={[
+              { value: "active", label: "Active" },
+              { value: "inactive", label: "Inactive" },
+              { value: "archived", label: "Archived" },
+            ]}
+            filterValue={(row) => row.status}
+            emptyMessage="No students yet."
+            exportFileName="students"
+            columns={[
+              {
+                id: "admission",
+                header: "Admission no",
+                cell: (row) => (
+                  <span className="font-medium text-teal">
+                    {row.studentNumber}
+                  </span>
+                ),
+              },
+              {
+                id: "name",
+                header: "Name",
+                cell: (row) => (
+                  <PersonCell
+                    name={`${row.firstName} ${row.lastName}`}
+                    secondary={row.rollHint}
+                    href={`/school/students/${row.id}?school=${schoolId}`}
+                    photoUrl={row.photoUrl}
+                  />
+                ),
+              },
+              {
+                id: "class",
+                header: "Class",
+                cell: (row) => row.classLabel,
+              },
+              {
+                id: "dob",
+                header: "Date of birth",
+                cell: (row) => formatListDate(row.dateOfBirth),
+              },
+              {
+                id: "gender",
+                header: "Gender",
+                cell: (row) => (
+                  <span className="capitalize">{row.gender ?? "—"}</span>
+                ),
+              },
+              {
+                id: "status",
+                header: "Status",
+                cell: (row) => <StatusBadge status={row.status} />,
+              },
+              {
+                id: "action",
+                header: "Action",
+                cell: (row) => {
+                  const enrolment = enrolments.find(
+                    (e) => e.studentId === row.id && e.status === "enrolled",
+                  );
+                  if (!canManage || !enrolment) {
+                    return <span className="text-muted">—</span>;
+                  }
+                  return (
+                    <RowActionsMenu>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => openWithdraw(enrolment)}
+                        className="block w-full px-3 py-2 text-left text-sm text-ink hover:bg-paper"
+                      >
+                        Withdraw enrolment
+                      </button>
+                    </RowActionsMenu>
+                  );
+                },
+              },
+            ]}
+          />
+        </section>
+      ) : null}
+
+      {activeSection === "enrolments" ? (
+        <section aria-labelledby="enrolments-heading">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h2
+                id="enrolments-heading"
+                className="text-sm font-semibold tracking-wide text-ink uppercase"
+              >
+                Enrolments
+              </h2>
+              <p className="mt-1 text-sm text-muted">
+                Place students in a grade and optional section for an academic
+                year.
+              </p>
+            </div>
+            {canManage ? (
               <button
                 type="button"
                 onClick={enrolDialog.openDialog}
-                className="rounded-md border border-line bg-paper-elevated px-4 py-2 text-sm font-medium text-ink"
+                className="rounded-md bg-teal px-4 py-2 text-sm font-medium text-white"
               >
                 Enrol student
               </button>
-              <button
-                type="button"
-                onClick={createDialog.openDialog}
-                className="rounded-md bg-teal px-4 py-2 text-sm font-medium text-white"
-              >
-                + Add student
-              </button>
-            </>
-          ) : null}
-        </div>
+            ) : null}
+          </div>
 
-        <SchoolDataTable
-          rows={listRows}
-          rowKey={(row) => row.id}
-          searchPlaceholder="Search students"
-          searchText={(row) =>
-            [
-              row.studentNumber,
-              row.firstName,
-              row.lastName,
-              row.classLabel,
-              row.gender ?? "",
-              row.status,
-            ].join(" ")
-          }
-          filterOptions={[
-            { value: "active", label: "Active" },
-            { value: "inactive", label: "Inactive" },
-            { value: "archived", label: "Archived" },
-          ]}
-          filterValue={(row) => row.status}
-          emptyMessage="No students yet."
-          exportFileName="students"
-          columns={[
-            {
-              id: "admission",
-              header: "Admission no",
-              cell: (row) => (
-                <span className="font-medium text-teal">{row.studentNumber}</span>
-              ),
-            },
-            {
-              id: "name",
-              header: "Name",
-              cell: (row) => (
-                <PersonCell
-                  name={`${row.firstName} ${row.lastName}`}
-                  secondary={row.rollHint}
-                />
-              ),
-            },
-            {
-              id: "class",
-              header: "Class",
-              cell: (row) => row.classLabel,
-            },
-            {
-              id: "dob",
-              header: "Date of birth",
-              cell: (row) => formatListDate(row.dateOfBirth),
-            },
-            {
-              id: "gender",
-              header: "Gender",
-              cell: (row) => (
-                <span className="capitalize">{row.gender ?? "—"}</span>
-              ),
-            },
-            {
-              id: "status",
-              header: "Status",
-              cell: (row) => <StatusBadge status={row.status} />,
-            },
-            {
-              id: "action",
-              header: "Action",
-              cell: (row) => {
-                const enrolment = enrolments.find(
-                  (e) => e.studentId === row.id && e.status === "enrolled",
-                );
-                if (!canManage || !enrolment) {
-                  return <span className="text-muted">—</span>;
-                }
-                return (
-                  <RowActionsMenu>
-                    <button
-                      type="button"
-                      role="menuitem"
-                      onClick={() => openWithdraw(enrolment)}
-                      className="block w-full px-3 py-2 text-left text-sm text-ink hover:bg-paper"
-                    >
-                      Withdraw enrolment
-                    </button>
-                  </RowActionsMenu>
-                );
-              },
-            },
-          ]}
-        />
-      </section>
-
-      <section aria-labelledby="enrolments-heading" className="mt-12">
-        <h2
-          id="enrolments-heading"
-          className="font-display text-2xl tracking-tight text-ink"
-        >
-          Enrolments
-        </h2>
-        <p className="mt-2 max-w-2xl text-sm text-muted">
-          Place students in a grade and optional section for an academic year.
-        </p>
-
-        <div className="mt-6">
           <SchoolDataTable
             rows={enrolments}
             rowKey={(row) => row.id}
@@ -283,10 +315,13 @@ export function SchoolStudentsPanel({
                 cell: (row) => {
                   const label = studentLabel.get(row.studentId) ?? "Student";
                   const [number, ...rest] = label.split(" · ");
+                  const student = students.find((s) => s.id === row.studentId);
                   return (
                     <PersonCell
                       name={rest.join(" · ") || label}
                       secondary={number !== label ? number : null}
+                      href={`/school/students/${row.studentId}?school=${schoolId}`}
+                      photoUrl={student?.photoUrl}
                     />
                   );
                 },
@@ -340,8 +375,8 @@ export function SchoolStudentsPanel({
               },
             ]}
           />
-        </div>
-      </section>
+        </section>
+      ) : null}
 
       {!canManage ? (
         <p className="mt-8 text-sm text-muted">
@@ -471,7 +506,7 @@ export function SchoolStudentsPanel({
         />
         {years.length === 0 || activeGrades.length === 0 ? (
           <p className="text-xs text-muted">
-            Create an academic year and grade under Academic before enrolling.
+            Create an academic year and grade under Classes before enrolling.
           </p>
         ) : null}
       </FormDialog>

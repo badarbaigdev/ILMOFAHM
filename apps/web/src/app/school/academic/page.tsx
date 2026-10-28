@@ -1,8 +1,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { PageSectionNav } from "@/components/shell/PageSectionNav";
-import { SchoolAcademicPanel } from "@/features/schools/academic/academic-panel";
+import { SubTabs } from "@/components/ui/sub-tabs";
+import {
+  SchoolAcademicPanel,
+  type AcademicPanelSection,
+} from "@/features/schools/academic/academic-panel";
 import {
   listSchoolAcademicTerms,
   listSchoolAcademicYears,
@@ -16,21 +19,26 @@ import {
   isSchoolAuthorizationError,
 } from "@/features/schools/authorization";
 import { loadSchoolContext } from "@/features/schools/context";
+import { listSchoolEnrolments } from "@/features/schools/students/queries";
 import { getRequestSchoolSlug } from "@/lib/tenancy/request";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 const ACADEMIC_SECTIONS = [
-  { id: "school-academic-years-heading", label: "Years" },
-  { id: "school-structure-heading", label: "Structure" },
-] as const;
+  { id: "overview", label: "Overview" },
+  { id: "grades", label: "Grades" },
+  { id: "years", label: "Years" },
+  { id: "subjects", label: "Subjects" },
+  { id: "links", label: "Workflows" },
+] as const satisfies ReadonlyArray<{ id: AcademicPanelSection; label: string }>;
 
 type PageProps = {
-  searchParams: Promise<{ school?: string }>;
+  searchParams: Promise<{ school?: string; section?: string }>;
 };
 
 export default async function SchoolAcademicPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const requestedSchoolId = params.school?.trim() ?? "";
+  const sectionParam = params.section?.trim() ?? "overview";
   const hostSchoolSlug = await getRequestSchoolSlug();
   const supabase = await createServerSupabaseClient();
   const {
@@ -57,10 +65,10 @@ export default async function SchoolAcademicPage({ searchParams }: PageProps) {
       <main
         id="main-content"
         tabIndex={-1}
-        className="mx-auto w-full max-w-3xl px-6 py-16 outline-none sm:px-10"
+        className="w-full max-w-none px-3 py-6 outline-none sm:px-4 lg:px-5"
       >
-        <h1 className="font-display text-3xl tracking-tight text-ink">
-          Academic
+        <h1 className="text-2xl font-semibold tracking-tight text-ink">
+          Classes
         </h1>
         <p role="alert" className="mt-4 text-sm text-red-700">
           Could not load academic structure.
@@ -74,10 +82,10 @@ export default async function SchoolAcademicPage({ searchParams }: PageProps) {
       <main
         id="main-content"
         tabIndex={-1}
-        className="mx-auto w-full max-w-3xl px-6 py-16 outline-none sm:px-10"
+        className="w-full max-w-none px-3 py-6 outline-none sm:px-4 lg:px-5"
       >
-        <h1 className="font-display text-3xl tracking-tight text-ink">
-          Academic
+        <h1 className="text-2xl font-semibold tracking-tight text-ink">
+          Classes
         </h1>
         <p className="mt-4 text-sm text-muted">
           You need an active school membership to view academic structure.
@@ -109,10 +117,10 @@ export default async function SchoolAcademicPage({ searchParams }: PageProps) {
         <main
           id="main-content"
           tabIndex={-1}
-          className="mx-auto w-full max-w-3xl px-6 py-16 outline-none sm:px-10"
+          className="w-full max-w-none px-3 py-6 outline-none sm:px-4 lg:px-5"
         >
-          <h1 className="font-display text-3xl tracking-tight text-ink">
-            Academic
+          <h1 className="text-2xl font-semibold tracking-tight text-ink">
+            Classes
           </h1>
           <p role="alert" className="mt-4 text-sm text-red-700">
             You do not have permission to view academic structure for this
@@ -140,8 +148,9 @@ export default async function SchoolAcademicPage({ searchParams }: PageProps) {
   let grades;
   let sections;
   let subjects;
+  let enrolments: Awaited<ReturnType<typeof listSchoolEnrolments>> = [];
   try {
-    [years, terms, grades, sections, subjects] = await Promise.all([
+    [years, terms, grades, sections, subjects, enrolments] = await Promise.all([
       listSchoolAcademicYears(supabase, active.school.id),
       listSchoolAcademicTerms(supabase, active.school.id),
       supportsSchoolStructure
@@ -153,16 +162,17 @@ export default async function SchoolAcademicPage({ searchParams }: PageProps) {
       supportsSchoolStructure
         ? listSchoolSubjects(supabase, active.school.id)
         : Promise.resolve([]),
+      listSchoolEnrolments(supabase, active.school.id).catch(() => []),
     ]);
   } catch {
     return (
       <main
         id="main-content"
         tabIndex={-1}
-        className="mx-auto w-full max-w-3xl px-6 py-16 outline-none sm:px-10"
+        className="w-full max-w-none px-3 py-6 outline-none sm:px-4 lg:px-5"
       >
-        <h1 className="font-display text-3xl tracking-tight text-ink">
-          Academic
+        <h1 className="text-2xl font-semibold tracking-tight text-ink">
+          Classes
         </h1>
         <p role="alert" className="mt-4 text-sm text-red-700">
           Could not load academic structure.
@@ -173,33 +183,69 @@ export default async function SchoolAcademicPage({ searchParams }: PageProps) {
 
   const sectionLinks = supportsSchoolStructure
     ? ACADEMIC_SECTIONS
-    : ACADEMIC_SECTIONS.filter((s) => s.id !== "school-structure-heading");
+    : ACADEMIC_SECTIONS.filter(
+        (s) => s.id !== "grades" && s.id !== "subjects",
+      );
+
+  const activeSection = sectionLinks.some((s) => s.id === sectionParam)
+    ? (sectionParam as AcademicPanelSection)
+    : "overview";
+
+  const schoolQuery = `school=${encodeURIComponent(active.school.id)}`;
+  const currentYear = years.find((y) => y.isCurrent);
 
   return (
     <main
       id="main-content"
       tabIndex={-1}
-      className="mx-auto w-full max-w-3xl px-6 py-16 outline-none sm:px-10"
+      className="w-full max-w-none px-3 py-6 outline-none sm:px-4 lg:px-5"
     >
       <p className="text-sm text-muted">
         <Link
           href={`/school?school=${active.school.id}`}
           className="text-ink underline-offset-2 hover:underline"
         >
-          ← {active.school.name}
+          {active.school.name}
         </Link>
+        <span className="mx-1.5 text-line">/</span>
+        Classes
       </p>
-      <h1 className="mt-4 font-display text-3xl tracking-tight text-ink">
-        Academic
-      </h1>
-      <p className="mt-2 max-w-2xl text-sm text-muted">
-        Years, terms, grades, sections, and subjects for{" "}
-        {active.school.name}.
-      </p>
+      <div className="mt-3 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-ink">
+            Classes
+          </h1>
+          <p className="mt-1 max-w-2xl text-sm text-muted">
+            Years, grades, sections, and subjects for {active.school.name}.
+            {currentYear ? (
+              <>
+                {" "}
+                Current year: <span className="text-ink">{currentYear.name}</span>
+              </>
+            ) : null}
+          </p>
+        </div>
+      </div>
 
-      <PageSectionNav sections={sectionLinks} />
+      <SubTabs
+        label="Classes sections"
+        activeId={activeSection}
+        items={sectionLinks.map((section) => ({
+          id: section.id,
+          label: section.label,
+          href: `/school/academic?${schoolQuery}&section=${section.id}`,
+          count:
+            section.id === "grades"
+              ? grades.filter((g) => g.status === "active").length
+              : section.id === "years"
+                ? years.length
+                : section.id === "subjects"
+                  ? subjects.filter((s) => s.status === "active").length
+                  : undefined,
+        }))}
+      />
 
-      <div className="mt-10">
+      <div className="mt-8">
         <SchoolAcademicPanel
           schoolId={active.school.id}
           years={years}
@@ -207,8 +253,10 @@ export default async function SchoolAcademicPage({ searchParams }: PageProps) {
           grades={grades}
           sections={sections}
           subjects={subjects}
+          enrolments={enrolments}
           canManage={canManage}
           supportsSchoolStructure={supportsSchoolStructure}
+          activeSection={activeSection}
         />
       </div>
     </main>

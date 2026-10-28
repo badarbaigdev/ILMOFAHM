@@ -19,6 +19,18 @@ export const STATUS_BADGE_CLASS: Record<string, string> = {
   cancelled: "bg-stone-200 text-stone-700",
   archived: "bg-stone-200 text-stone-700",
   pending: "bg-amber-100 text-amber-900",
+  under_review: "bg-sky-100 text-sky-900",
+  information_requested: "bg-amber-100 text-amber-900",
+  approved: "bg-emerald-100 text-emerald-800",
+  rejected: "bg-red-100 text-red-800",
+  trial: "bg-sky-100 text-sky-900",
+  past_due: "bg-orange-100 text-orange-800",
+  grace: "bg-amber-100 text-amber-900",
+  expired: "bg-stone-200 text-stone-700",
+  pending_setup: "bg-amber-100 text-amber-900",
+  revoked: "bg-red-100 text-red-800",
+  draft: "bg-amber-100 text-amber-900",
+  submitted: "bg-emerald-100 text-emerald-800",
 };
 
 export function StatusBadge({ status }: { status: string }) {
@@ -32,7 +44,21 @@ export function StatusBadge({ status }: { status: string }) {
   );
 }
 
-export function PersonAvatar({ name }: { name: string }) {
+export function PersonAvatar({
+  name,
+  photoUrl,
+  size = "md",
+  className = "",
+}: {
+  name: string;
+  photoUrl?: string | null;
+  size?: "sm" | "md" | "lg";
+  className?: string;
+}) {
+  const dim =
+    size === "sm" ? "h-7 w-7" : size === "lg" ? "h-16 w-16" : "h-8 w-8";
+  const text =
+    size === "sm" ? "text-[0.6rem]" : size === "lg" ? "text-lg" : "text-xs";
   const initials =
     name
       .split(/\s+/)
@@ -42,12 +68,35 @@ export function PersonAvatar({ name }: { name: string }) {
       .slice(0, 2)
       .toUpperCase() || "?";
 
+  if (photoUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={photoUrl}
+        alt=""
+        className={`${dim} shrink-0 rounded-full object-cover ${className}`}
+      />
+    );
+  }
+
   return (
     <span
       aria-hidden
-      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#dce8e6] text-xs font-semibold text-teal"
+      title="Profile photo placeholder"
+      className={`relative ${dim} inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#dce8e6] ${text} font-semibold text-teal ${className}`}
     >
-      {initials}
+      <svg
+        viewBox="0 0 40 40"
+        className="absolute inset-0 h-full w-full text-teal/25"
+        aria-hidden
+      >
+        <circle cx="20" cy="15" r="7" fill="currentColor" />
+        <path
+          d="M6 36c2-10 26-10 28 0"
+          fill="currentColor"
+        />
+      </svg>
+      <span className="relative">{initials}</span>
     </span>
   );
 }
@@ -55,20 +104,35 @@ export function PersonAvatar({ name }: { name: string }) {
 export function PersonCell({
   name,
   secondary,
+  href,
+  photoUrl,
 }: {
   name: string;
   secondary?: string | null;
+  href?: string;
+  photoUrl?: string | null;
 }) {
-  return (
+  const body = (
     <div className="flex items-center gap-2.5">
-      <PersonAvatar name={name} />
+      <PersonAvatar name={name} photoUrl={photoUrl} />
       <div className="min-w-0">
-        <p className="truncate font-medium text-ink">{name}</p>
+        <p
+          className={`truncate font-medium ${href ? "text-teal" : "text-ink"}`}
+        >
+          {name}
+        </p>
         {secondary ? (
           <p className="truncate text-xs text-muted">{secondary}</p>
         ) : null}
       </div>
     </div>
+  );
+
+  if (!href) return body;
+  return (
+    <a href={href} className="block no-underline hover:opacity-90">
+      {body}
+    </a>
   );
 }
 

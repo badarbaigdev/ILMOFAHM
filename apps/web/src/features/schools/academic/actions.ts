@@ -455,3 +455,151 @@ export async function archiveSchoolGradeAction(
   revalidateAcademic(schoolId);
   return { error: null, success: "Grade archived." };
 }
+
+export async function updateSchoolGradeAction(
+  _prev: SchoolAcademicActionState,
+  formData: FormData,
+): Promise<SchoolAcademicActionState> {
+  const schoolId = String(formData.get("school_id") ?? "").trim();
+  const gradeId = String(formData.get("grade_id") ?? "").trim();
+  if (!isUuid(schoolId) || !isUuid(gradeId)) {
+    return { error: "Grade is required.", success: null };
+  }
+
+  const validated = validateGradeInput({
+    name: String(formData.get("name") ?? ""),
+    code: String(formData.get("code") ?? ""),
+    sortOrder: String(formData.get("sort_order") ?? "1"),
+  });
+  if (!validated.ok) {
+    return { error: validated.error, success: null };
+  }
+
+  const { supabase, user } = await requireUser(schoolId);
+  try {
+    await authorizeSchool(supabase, user.id, schoolId, "academic.manage");
+  } catch (error) {
+    if (isSchoolAuthorizationError(error)) {
+      return { error: error.message, success: null };
+    }
+    throw error;
+  }
+
+  const { error } = await supabase.rpc("update_school_grade", {
+    p_grade_id: gradeId,
+    p_name: validated.value.name,
+    p_code: validated.value.code,
+    p_sort_order: validated.value.sortOrder,
+  });
+
+  if (error) {
+    if (error.message?.includes("Not authorized")) {
+      return { error: "You are not allowed to manage grades.", success: null };
+    }
+    if (error.code === "23505") {
+      return { error: "A grade with that name already exists.", success: null };
+    }
+    return { error: error.message || "Could not update grade.", success: null };
+  }
+
+  revalidateAcademic(schoolId);
+  return { error: null, success: "Grade updated." };
+}
+
+export async function updateSchoolSectionAction(
+  _prev: SchoolAcademicActionState,
+  formData: FormData,
+): Promise<SchoolAcademicActionState> {
+  const schoolId = String(formData.get("school_id") ?? "").trim();
+  const sectionId = String(formData.get("section_id") ?? "").trim();
+  if (!isUuid(schoolId) || !isUuid(sectionId)) {
+    return { error: "Section is required.", success: null };
+  }
+
+  const validated = validateSectionInput({
+    name: String(formData.get("name") ?? ""),
+    capacity: String(formData.get("capacity") ?? ""),
+  });
+  if (!validated.ok) {
+    return { error: validated.error, success: null };
+  }
+
+  const { supabase, user } = await requireUser(schoolId);
+  try {
+    await authorizeSchool(supabase, user.id, schoolId, "academic.manage");
+  } catch (error) {
+    if (isSchoolAuthorizationError(error)) {
+      return { error: error.message, success: null };
+    }
+    throw error;
+  }
+
+  const { error } = await supabase.rpc("update_school_section", {
+    p_section_id: sectionId,
+    p_name: validated.value.name,
+    p_capacity: validated.value.capacity,
+  });
+
+  if (error) {
+    if (error.message?.includes("Not authorized")) {
+      return {
+        error: "You are not allowed to manage sections.",
+        success: null,
+      };
+    }
+    if (error.code === "23505") {
+      return {
+        error: "A section with that name already exists for this grade.",
+        success: null,
+      };
+    }
+    return {
+      error: error.message || "Could not update section.",
+      success: null,
+    };
+  }
+
+  revalidateAcademic(schoolId);
+  return { error: null, success: "Section updated." };
+}
+
+export async function archiveSchoolSectionAction(
+  _prev: SchoolAcademicActionState,
+  formData: FormData,
+): Promise<SchoolAcademicActionState> {
+  const schoolId = String(formData.get("school_id") ?? "").trim();
+  const sectionId = String(formData.get("section_id") ?? "").trim();
+  if (!isUuid(schoolId) || !isUuid(sectionId)) {
+    return { error: "Section is required.", success: null };
+  }
+
+  const { supabase, user } = await requireUser(schoolId);
+  try {
+    await authorizeSchool(supabase, user.id, schoolId, "academic.manage");
+  } catch (error) {
+    if (isSchoolAuthorizationError(error)) {
+      return { error: error.message, success: null };
+    }
+    throw error;
+  }
+
+  const { error } = await supabase.rpc("archive_school_section", {
+    p_section_id: sectionId,
+  });
+
+  if (error) {
+    if (error.message?.includes("Not authorized")) {
+      return {
+        error: "You are not allowed to manage sections.",
+        success: null,
+      };
+    }
+    return {
+      error: error.message || "Could not archive section.",
+      success: null,
+    };
+  }
+
+  revalidateAcademic(schoolId);
+  return { error: null, success: "Section archived." };
+}

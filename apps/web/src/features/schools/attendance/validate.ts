@@ -3,6 +3,7 @@ export type AttendanceStatus =
   | "absent"
   | "late"
   | "excused"
+  | "half_day"
   | "leave";
 
 export type AttendanceMarkInput = {
@@ -26,17 +27,44 @@ export type CorrectAttendanceInput = {
 export type ValidateResult<T> =
   { ok: true; value: T } | { ok: false; error: string };
 
+/** All statuses accepted by validation / DB (includes legacy leave). */
 export const ATTENDANCE_STATUSES: readonly AttendanceStatus[] = [
   "present",
   "absent",
   "late",
   "excused",
+  "half_day",
   "leave",
 ];
+
+/** Primary statuses for quick marking UI. */
+export const PRIMARY_ATTENDANCE_STATUSES: readonly AttendanceStatus[] = [
+  "present",
+  "absent",
+  "late",
+  "excused",
+  "half_day",
+];
+
+export const ATTENDANCE_STATUS_LABELS: Record<AttendanceStatus, string> = {
+  present: "Present",
+  absent: "Absent",
+  late: "Late",
+  excused: "Excused",
+  half_day: "Half-day",
+  leave: "Leave",
+};
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+export function attendanceStatusLabel(status: string): string {
+  if (status in ATTENDANCE_STATUS_LABELS) {
+    return ATTENDANCE_STATUS_LABELS[status as AttendanceStatus];
+  }
+  return status;
+}
 
 export function validateOpenAttendanceInput(raw: {
   schoolId: string;

@@ -24,14 +24,18 @@ export const SCHOOL_CONSOLE_NAV: ConsoleNavGroup[] = [
     label: "Operations",
     items: [
       { href: "/school/academic", label: "Classes" },
+      { href: "/school/timetable", label: "Timetable" },
       { href: "/school/attendance", label: "Attendance" },
+      { href: "/school/exams", label: "Exams" },
       { href: "/school/fees", label: "Fees" },
+      { href: "/school/inventory", label: "Inventory" },
     ],
   },
   {
     label: "School",
     items: [
-      { href: "/school/settings", label: "Settings" },
+      { href: "/school/settings", label: "School profile" },
+      { href: "/school/account", label: "My account" },
       { href: "/school/setup", label: "Setup" },
     ],
   },
@@ -64,6 +68,9 @@ export const PLATFORM_CONSOLE_NAV: ConsoleNavGroup[] = [
   },
   {
     label: "Access",
-    items: [{ href: "/platform/operators", label: "Operators" }],
+    items: [
+      { href: "/platform/password-recovery", label: "Password recovery" },
+      { href: "/platform/operators", label: "Operators" },
+    ],
   },
 ];

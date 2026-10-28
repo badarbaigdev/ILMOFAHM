@@ -67,6 +67,24 @@ export function buildAuthCallbackUrl(
   return url.toString();
 }
 
+/**
+ * App-owned Auth confirm URL for admin `generateLink` hashed tokens.
+ * Prefer this over Supabase `action_link` — those redirect with URL hash
+ * fragments that a server `/auth/callback` route cannot exchange.
+ */
+export function buildAuthConfirmUrl(
+  appUrl: string,
+  tokenHash: string,
+  type: "recovery" | "magiclink" | "invite" | "email" | "signup",
+  nextPath = "/school",
+): string {
+  const url = new URL("/auth/confirm", appUrl.replace(/\/$/, ""));
+  url.searchParams.set("token_hash", tokenHash);
+  url.searchParams.set("type", type);
+  url.searchParams.set("next", safeAuthNextPath(nextPath));
+  return url.toString();
+}
+
 /** Build a shareable school invitation acceptance URL. */
 export function buildSchoolInviteAcceptUrl(
   appUrl: string,
